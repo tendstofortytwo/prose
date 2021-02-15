@@ -1,0 +1,306 @@
+*, *:before, *:after {
+	box-sizing: border-box;
+}
+
+@mixin transition-all {
+	transition: all 0.1s ease-in-out;
+}
+
+html {
+	font-size: 14pt;
+	min-height: 100%;
+	position: relative;
+}
+
+$ls: 1.4rem;
+
+$darkMode: true;
+
+
+
+$bgColor: white;
+$bodyColor: #555;
+$strongColor: #333;
+$lightColor: #999;
+$accentColor: #3498db;
+	
+body {
+	height: 100%;
+	background-color: $bgColor;
+	font-family: 'Nunito', sans-serif;
+	margin: 0;
+	color: $bodyColor;
+}
+
+.grid {
+	position: absolute;
+	height: 100%;
+	width: 100%;
+	top: 0;
+	left: 0;
+	z-index: 5000;
+	background-image: linear-gradient(transparent 93%, rgba(0,0,0,0.3) 93%, rgba(0,0,0,0.3));
+	background-size: 1*$ls 1*$ls;
+	pointer-events: none;
+	
+	&.hidden {
+		display: none;
+	}
+}
+
+button.grid-button {
+	position: fixed;
+	bottom: 0.5*$ls;
+	right: 0.5*$ls;
+	height: 2*$ls;
+	padding: 0 1*$ls;
+	margin: 0;
+	border: 0;
+	outline: none;
+	font: inherit;
+	font-size: 0.8rem;
+	background: $accentColor;
+	color: white;
+	z-index: 6000;
+	border-radius: 0.2*$ls;
+	box-shadow: 0 0.1*$ls 0.1*$ls 0.0125*$ls rgba(0,0,0,0.3); 
+}
+
+header {
+	height: 3*$ls;
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	width: 40*$ls;
+	max-width: 100%;
+	margin: 0 auto;
+	
+	h1.title {
+		margin: 0;
+		line-height: 3*$ls;
+		color: $strongColor;
+		font-size: 1.8rem;
+		padding: 0;
+	}
+	
+	img {
+		height: 80%;
+		margin: 0 0.5*$ls;
+	}
+	
+	nav {
+		display: flex;
+		height: 100%;
+		
+		a {
+			color: $strongColor;
+			text-decoration: none;
+			display: block;
+			line-height: 3*$ls;
+			padding: 0 $ls;
+			position: relative;
+			height: 100%;
+			
+			&:before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 0.15rem;
+				background: white;
+				opacity: 0;
+				@include transition-all;
+			}
+			
+			&:hover:before {
+				opacity: 1;
+			}
+		}
+	}
+}
+
+main {
+	width: 40*$ls;
+	max-width: 100%;
+	margin: 4*$ls auto 2*$ls;
+}
+
+article {
+	padding: 2*$ls;
+	//background: white;
+	//box-shadow: 0 0.05*$ls 0.1*$ls rgba(0,0,0,0.5);
+	border-radius: 0.2*$ls;
+	margin: 1*$ls 0 0;
+	
+	date {
+		font-size: 0.9rem;
+		height: $ls;
+		line-height: $ls;
+		display: block;
+		font-weight: 400;
+	}
+	
+	h1 {
+		font-size: 2.6rem;
+		margin: 0;
+		line-height: 2*$ls;
+		color: $strongColor;
+	}
+	
+	h2 {
+		font-size: 1.4rem;
+		font-weight: 300;
+		font-style: italic;
+		color: $lightColor;
+		line-height: 1*$ls;
+		margin: 1*$ls 0 0;
+	}
+	
+	h3 {
+		line-height: $ls;
+		margin: $ls 0;
+		font-size: 1.3rem;
+		color: $strongColor;
+	}
+	
+	h4 {
+		line-height: $ls;
+		margin: $ls 0;
+		font-size: 1rem;
+		color: $strongColor;
+	}
+	
+	p {
+		line-height: $ls;
+		margin: $ls 0 0;
+		color: $bodyColor;
+	}
+
+
+	blockquote {
+		margin: $ls 0;
+		padding: 0 $ls;
+		border-left: 0.2rem solid $lightColor;
+		color: $lightColor;
+		font-style: italic;
+
+		p {
+			margin: 0;
+		}
+	}
+	
+	code {
+		font-family: 'JetBrains Mono', monospace;
+		font-size: 0.9em;
+		color: $strongColor;
+	}
+	
+	pre {
+		margin: $ls 0;
+		line-height: $ls;
+		max-width: 100%;
+		overflow-x: auto;
+		padding: 0 2*$ls;
+		
+		code {
+			line-height: $ls;
+			display: block;
+		}
+	}
+	
+	figure {
+		height: 20*$ls;
+		padding-bottom: 2*$ls;
+		margin: 2*$ls 0 0;
+		
+		img {
+			height: 100%;
+			width: 100%;
+			display: block;
+			object-fit: contain;
+		}
+		
+		img.fill {
+			object-fit: cover;
+		}
+		
+		figcaption {
+			height: 2*$ls;
+			line-height: 2*$ls;
+			text-align: center;
+			font-style: italic;
+			color: $lightColor;
+			font-size: 0.8rem;
+		}
+	}
+	
+	section.content {		
+		a {
+			color: $strongColor;
+			text-decoration: none;
+			background-image: linear-gradient(
+				transparent 80%, 
+				$lightColor 80%, 
+				$lightColor 85%, 
+				transparent 85%
+			);
+
+			&:hover {
+				color: $bodyColor;
+				background-image: linear-gradient(
+					transparent 80%, 
+					lighten($lightColor, 15%) 80%,
+					lighten($lightColor, 15%) 85%,
+					transparent 85%
+				);
+			}
+		}
+		
+		ul, ol {
+			color: $bodyColor;
+			margin: $ls 0;
+			padding: 0 0 0 $ls;
+			line-height: $ls;
+			
+			ul, ol {
+				margin: 0;
+			}
+		}
+		
+		ul {
+			li {
+				list-style: none;
+				position: relative;
+				
+				&:before {
+					content: '·';
+					height: $ls;
+					width: $ls;
+					display: block;
+					position: absolute;
+					top: 0;
+					left: -$ls;
+					text-align: center;
+					line-height: $ls;
+					font-weight: bold;
+					color: $strongColor;
+				}
+			}
+		}
+	}
+	
+	a.load-content {
+		display: block;
+		height: 3*$ls;
+		line-height: 3*$ls;
+		color: $accentColor;
+		text-align: center;
+		text-decoration: none;
+	}
+}
+
+footer {
+	text-align: center;
+	padding: $ls 0;
+}
