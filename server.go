@@ -19,6 +19,8 @@ type server struct {
 	pageTpl       *raymond.Template
 	fullPostTpl   *raymond.Template
 	summaryTpl    *raymond.Template
+	errorTpl      *raymond.Template
+	notFoundTpl   *raymond.Template
 }
 
 func newServer() (*server, error) {
@@ -81,6 +83,18 @@ func (s *server) refreshTemplates() error {
 	}
 	log.Printf("Loaded full post template")
 
+	s.notFoundTpl, err = raymond.ParseFile("templates/notfound.html")
+	if err != nil {
+		return fmt.Errorf("could not parse 404 template")
+	}
+	log.Printf("Loaded 404 template")
+
+	s.errorTpl, err = raymond.ParseFile("templates/error.html")
+	if err != nil {
+		return fmt.Errorf("could not parse error template")
+	}
+	log.Printf("Loaded error template")
+
 	s.summaryTpl, err = raymond.ParseFile("templates/summary.html")
 	if err != nil {
 		return fmt.Errorf("could not parse summary template")
@@ -138,6 +152,13 @@ func (s *server) logRequest(req *http.Request) {
 
 func (s *server) router(res http.ResponseWriter, req *http.Request) {
 	s.logRequest(req)
+	res = &errorCatcher{
+		res:          res,
+		req:          req,
+		errorTpl:     s.errorTpl,
+		notFoundTpl:  s.notFoundTpl,
+		handledError: false,
+	}
 	slug := req.URL.Path[1:]
 
 	if slug == "" {
