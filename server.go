@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -47,7 +46,7 @@ func newServer() (*server, error) {
 }
 
 func (s *server) refreshPages() error {
-	files, err := ioutil.ReadDir("posts/")
+	files, err := os.ReadDir("posts/")
 	if err != nil {
 		return err
 	}
@@ -136,7 +135,7 @@ func loadRegularStylesheet(filename string) error {
 }
 
 func (s *server) refreshStyles() error {
-	styles, err := ioutil.ReadDir("styles/")
+	styles, err := os.ReadDir("styles/")
 	if err != nil {
 		return fmt.Errorf("Could not load styles directory: %s", err)
 	}

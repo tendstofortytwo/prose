@@ -3,7 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/aymerick/raymond"
 	"github.com/mitchellh/mapstructure"
@@ -31,7 +31,7 @@ type Page struct {
 }
 
 func newPage(slug string) (*Page, error) {
-	data, err := ioutil.ReadFile("posts/" + slug + ".md")
+	data, err := os.ReadFile("posts/" + slug + ".md")
 	if err != nil {
 		return nil, fmt.Errorf("could not read file: %s", err)
 	}
