@@ -69,37 +69,69 @@ func (s *server) refreshPages() error {
 	return nil
 }
 
+// loadTemplates, for each f in files, loads `templates/$f.html`
+// as a handlebars HTML template. If any single template fails to
+// load, only an error is returned. Conversely, if there is no error,
+// every template name passed is guaranteed to have loaded successfully.
+func loadTemplates(files []string) ([]*raymond.Template, error) {
+	templates := make([]*raymond.Template, 0, len(files))
+	for _, f := range files {
+		tpl, err := raymond.ParseFile("templates/" + f + ".html")
+		if err != nil {
+			return nil, fmt.Errorf("Could not parse %s template: %w", f, err)
+		}
+		templates = append(templates, tpl)
+	}
+	log.Printf("Loaded templates: %s", files)
+	return templates, nil
+}
+
 func (s *server) refreshTemplates() error {
-	var err error
-	s.pageTpl, err = raymond.ParseFile("templates/page.html")
+	templates, err := loadTemplates([]string{"page", "fullpost", "summary", "notfound", "error"})
 	if err != nil {
-		return fmt.Errorf("could not parse page template")
+		return err
 	}
-	log.Printf("Loaded page template")
+	s.pageTpl = templates[0]
+	s.fullPostTpl = templates[1]
+	s.summaryTpl = templates[2]
+	s.notFoundTpl = templates[3]
+	s.errorTpl = templates[4]
+	return nil
+}
 
-	s.fullPostTpl, err = raymond.ParseFile("templates/fullpost.html")
+func loadSassStylesheet(filename string) error {
+	in, err := os.Open("styles/" + filename)
 	if err != nil {
-		return fmt.Errorf("could not parse full post template")
+		return fmt.Errorf("Could not open style infile %s: %w", filename, err)
 	}
-	log.Printf("Loaded full post template")
+	output := strings.TrimSuffix(filename, ".scss") + ".css"
+	out, err := os.Create("static/css/" + output)
+	if err != nil {
+		return fmt.Errorf("Could not open style outfile %s: %w", output, err)
+	}
+	comp, err := libsass.New(out, in)
+	if err != nil {
+		return fmt.Errorf("Could not start sass compiler for file %s: %w", filename, err)
+	}
+	if err = comp.Run(); err != nil {
+		return fmt.Errorf("Could not generate stylesheet %s: %w", filename, err)
+	}
+	return nil
+}
 
-	s.notFoundTpl, err = raymond.ParseFile("templates/notfound.html")
+func loadRegularStylesheet(filename string) error {
+	in, err := os.Open("styles/" + filename)
 	if err != nil {
-		return fmt.Errorf("could not parse 404 template")
+		return fmt.Errorf("Could not open style infile %s: %w", filename, err)
 	}
-	log.Printf("Loaded 404 template")
-
-	s.errorTpl, err = raymond.ParseFile("templates/error.html")
+	out, err := os.Create("static/css/" + filename)
 	if err != nil {
-		return fmt.Errorf("could not parse error template")
+		return fmt.Errorf("Could not open style outfile %s: %w", filename, err)
 	}
-	log.Printf("Loaded error template")
-
-	s.summaryTpl, err = raymond.ParseFile("templates/summary.html")
+	_, err = io.Copy(out, in)
 	if err != nil {
-		return fmt.Errorf("could not parse summary template")
+		return fmt.Errorf("Could not copy stylesheet %s: %s", filename, err)
 	}
-	log.Printf("Loaded summary template")
 	return nil
 }
 
@@ -111,31 +143,15 @@ func (s *server) refreshStyles() error {
 
 	for _, s := range styles {
 		filename := s.Name()
-		in, err := os.Open("styles/" + filename)
-		if err != nil {
-			return fmt.Errorf("Could not open style infile %s: %s", filename, err)
-		}
 		if strings.HasSuffix(filename, ".scss") {
-			outFilename := strings.TrimSuffix(filename, ".scss") + ".css"
-			out, err := os.Create("static/css/" + outFilename)
+			err := loadSassStylesheet(filename)
 			if err != nil {
-				return fmt.Errorf("Could not open style outfile %s: %s", outFilename, err)
-			}
-			comp, err := libsass.New(out, in)
-			if err != nil {
-				return fmt.Errorf("Could not start sass compiler for file %s: %s", filename, err)
-			}
-			if err = comp.Run(); err != nil {
-				return fmt.Errorf("Could not generate stylesheet %s: %s", filename, err)
+				return err
 			}
 		} else if strings.HasSuffix(filename, ".css") {
-			out, err := os.Create("static/css/" + filename)
+			err := loadRegularStylesheet(filename)
 			if err != nil {
-				return fmt.Errorf("Could not open style outfile %s: %s", filename, err)
-			}
-			_, err = io.Copy(out, in)
-			if err != nil {
-				return fmt.Errorf("Could not copy stylesheet %s: %s", filename, err)
+				return err
 			}
 		} else {
 			log.Printf("Skipping stylesheet %s, don't know how to handle", filename)
