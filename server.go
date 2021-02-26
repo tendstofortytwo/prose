@@ -7,19 +7,19 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/aymerick/raymond"
+	"github.com/fsnotify/fsnotify"
 	"github.com/wellington/go-libsass"
 )
 
 type server struct {
 	pages         []*Page
 	staticHandler http.Handler
-	pageTpl       *raymond.Template
-	fullPostTpl   *raymond.Template
-	summaryTpl    *raymond.Template
-	errorTpl      *raymond.Template
-	notFoundTpl   *raymond.Template
+
+	tplMutex  sync.RWMutex
+	templates map[string]*raymond.Template
 }
 
 func newServer() (*server, error) {
@@ -41,6 +41,28 @@ func newServer() (*server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	go listenForChanges("templates/", func(file string) error {
+		s.tplMutex.Lock()
+		defer s.tplMutex.Unlock()
+		tplName := strings.TrimSuffix(file, ".html")
+		newTpl, err := loadTemplate(tplName)
+		if err != nil {
+			return err
+		}
+		s.templates[tplName] = newTpl
+		return nil
+	})
+
+	go listenForChanges("styles/", func(file string) error {
+		var err error
+		if strings.HasSuffix(file, ".scss") {
+			err = loadSassStylesheet(file)
+		} else if strings.HasSuffix(file, ".css") {
+			err = loadRegularStylesheet(file)
+		}
+		return err
+	})
 
 	return s, nil
 }
@@ -68,33 +90,40 @@ func (s *server) refreshPages() error {
 	return nil
 }
 
+func loadTemplate(file string) (*raymond.Template, error) {
+	tpl, err := raymond.ParseFile("templates/" + file + ".html")
+	if err != nil {
+		return nil, fmt.Errorf("Could not parse %s template: %w", file, err)
+	}
+	log.Printf("Loaded template: %s", file)
+	return tpl, nil
+}
+
 // loadTemplates, for each f in files, loads `templates/$f.html`
 // as a handlebars HTML template. If any single template fails to
 // load, only an error is returned. Conversely, if there is no error,
 // every template name passed is guaranteed to have loaded successfully.
-func loadTemplates(files []string) ([]*raymond.Template, error) {
-	templates := make([]*raymond.Template, 0, len(files))
+func loadTemplates(files []string) (map[string]*raymond.Template, error) {
+	templates := make(map[string]*raymond.Template)
 	for _, f := range files {
-		tpl, err := raymond.ParseFile("templates/" + f + ".html")
+		tpl, err := loadTemplate(f)
 		if err != nil {
-			return nil, fmt.Errorf("Could not parse %s template: %w", f, err)
+			return nil, err
 		}
-		templates = append(templates, tpl)
+		templates[f] = tpl
 	}
 	log.Printf("Loaded templates: %s", files)
 	return templates, nil
 }
 
 func (s *server) refreshTemplates() error {
-	templates, err := loadTemplates([]string{"page", "fullpost", "summary", "notfound", "error"})
+	s.tplMutex.Lock()
+	defer s.tplMutex.Unlock()
+	tpls, err := loadTemplates([]string{"page", "fullpost", "summary", "notfound", "error"})
 	if err != nil {
 		return err
 	}
-	s.pageTpl = templates[0]
-	s.fullPostTpl = templates[1]
-	s.summaryTpl = templates[2]
-	s.notFoundTpl = templates[3]
-	s.errorTpl = templates[4]
+	s.templates = tpls
 	return nil
 }
 
@@ -161,17 +190,52 @@ func (s *server) refreshStyles() error {
 	return nil
 }
 
+func listenForChanges(folder string, action func(string) error) {
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatalf("could not start fsnotify watcher for folder %s", folder)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+		for {
+			select {
+			case event := <-watcher.Events:
+				if event.Op&fsnotify.Write == fsnotify.Write {
+					log.Printf("Modified file: %s", event.Name)
+					err := action(strings.TrimPrefix(event.Name, folder))
+					if err != nil {
+						log.Printf("watcher action on %s failed: %v", event.Name, err)
+					}
+				}
+			case err := <-watcher.Errors:
+				log.Printf("Watcher error: %s", err)
+			}
+		}
+	}()
+
+	err = watcher.Add(folder)
+	if err != nil {
+		log.Fatal(err)
+	}
+	<-done
+}
+
 func (s *server) logRequest(req *http.Request) {
 	log.Printf("%s %s from %s", req.Method, req.URL.Path, req.RemoteAddr)
 }
 
 func (s *server) router(res http.ResponseWriter, req *http.Request) {
+	s.tplMutex.RLock()
+	defer s.tplMutex.RUnlock()
 	s.logRequest(req)
 	res = &errorCatcher{
 		res:          res,
 		req:          req,
-		errorTpl:     s.errorTpl,
-		notFoundTpl:  s.notFoundTpl,
+		errorTpl:     s.templates["error"],
+		notFoundTpl:  s.templates["notfound"],
 		handledError: false,
 	}
 	slug := req.URL.Path[1:]
@@ -202,12 +266,12 @@ func (s *server) createPage(title, contents string) (string, error) {
 		"title":    title,
 		"contents": contents,
 	}
-	return s.pageTpl.Exec(ctx)
+	return s.templates["page"].Exec(ctx)
 }
 
 func (s *server) renderPage(p *Page, res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("content-type", "text/html")
-	contents, err := p.render(s.fullPostTpl)
+	contents, err := p.render(s.templates["fullpost"])
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
@@ -224,7 +288,7 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 	var posts string
 
 	for _, p := range s.pages {
-		summary, err := p.render(s.summaryTpl)
+		summary, err := p.render(s.templates["summary"])
 		if err != nil {
 			log.Printf("could not render page summary for %s", p.Slug)
 		}
