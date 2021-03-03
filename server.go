@@ -6,11 +6,12 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
 	"github.com/aymerick/raymond"
-	"github.com/fsnotify/fsnotify"
+	"github.com/rjeczalik/notify"
 	"github.com/wellington/go-libsass"
 )
 
@@ -42,27 +43,52 @@ func newServer() (*server, error) {
 		return nil, err
 	}
 
-	go listenForChanges("templates/", func(file string) error {
-		s.tplMutex.Lock()
-		defer s.tplMutex.Unlock()
-		tplName := strings.TrimSuffix(file, ".html")
-		newTpl, err := loadTemplate(tplName)
-		if err != nil {
-			return err
-		}
-		s.templates[tplName] = newTpl
-		return nil
-	})
+	templatesLn := &listener{
+		folder: "templates/",
+		update: func(file string) error {
+			s.tplMutex.Lock()
+			defer s.tplMutex.Unlock()
+			tplName := strings.TrimSuffix(file, ".html")
+			newTpl, err := loadTemplate(tplName)
+			if err != nil {
+				return err
+			}
+			s.templates[tplName] = newTpl
+			return nil
+		},
+		clean: func(file string) error {
+			s.tplMutex.Lock()
+			defer s.tplMutex.Unlock()
+			tplName := strings.TrimSuffix(file, ".html")
+			delete(s.templates, tplName)
+			log.Printf("Unloaded template: %s", tplName)
+			return nil
+		},
+	}
+	go templatesLn.listen()
 
-	go listenForChanges("styles/", func(file string) error {
-		var err error
-		if strings.HasSuffix(file, ".scss") {
-			err = loadSassStylesheet(file)
-		} else if strings.HasSuffix(file, ".css") {
-			err = loadRegularStylesheet(file)
-		}
-		return err
-	})
+	stylesLn := &listener{
+		folder: "styles/",
+		update: func(file string) error {
+			var err error
+			if strings.HasSuffix(file, ".scss") {
+				err = loadSassStylesheet(file)
+			} else if strings.HasSuffix(file, ".css") {
+				err = loadRegularStylesheet(file)
+			}
+			return err
+		},
+		clean: func(file string) error {
+			var err error
+			if strings.HasSuffix(file, ".scss") {
+				err = os.Remove("static/style/" + strings.TrimSuffix(file, ".scss") + ".css")
+			} else if strings.HasSuffix(file, ".css") {
+				err = os.Remove("static/style/" + file)
+			}
+			return err
+		},
+	}
+	go stylesLn.listen()
 
 	return s, nil
 }
@@ -190,37 +216,69 @@ func (s *server) refreshStyles() error {
 	return nil
 }
 
-func listenForChanges(folder string, action func(string) error) {
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Fatalf("could not start fsnotify watcher for folder %s", folder)
-	}
-	defer watcher.Close()
+type listener struct {
+	folder string
+	update func(string) error
+	clean  func(string) error
+}
 
-	done := make(chan bool)
-	go func() {
-		defer close(done)
-		for {
-			select {
-			case event := <-watcher.Events:
-				if event.Op&fsnotify.Write == fsnotify.Write {
-					log.Printf("Modified file: %s", event.Name)
-					err := action(strings.TrimPrefix(event.Name, folder))
-					if err != nil {
-						log.Printf("watcher action on %s failed: %v", event.Name, err)
-					}
-				}
-			case err := <-watcher.Errors:
-				log.Printf("Watcher error: %s", err)
+func (l *listener) listen() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("could not get current working directory for listener!")
+	}
+	cwd = cwd + "/"
+
+	c := make(chan notify.EventInfo, 1)
+
+	var events []notify.Event
+
+	// inotify events prevent double-firing of
+	// certain events in Linux.
+	if runtime.GOOS == "linux" {
+		events = []notify.Event{
+			notify.InCloseWrite,
+			notify.InMovedFrom,
+			notify.InMovedTo,
+			notify.InDelete,
+		}
+	} else {
+		events = []notify.Event{
+			notify.Create,
+			notify.Remove,
+			notify.Rename,
+			notify.Write,
+		}
+	}
+
+	err = notify.Watch(l.folder, c, events...)
+
+	if err != nil {
+		log.Fatalf("Could not setup watcher for folder %s: %s", l.folder, err)
+	}
+
+	defer notify.Stop(c)
+
+	for {
+		ei := <-c
+		log.Printf("event: %s", ei.Event())
+		switch ei.Event() {
+		case notify.InCloseWrite, notify.InMovedTo, notify.Create, notify.Rename, notify.Write:
+			filePath := strings.TrimPrefix(ei.Path(), cwd)
+			log.Printf("updating file %s", filePath)
+			err := l.update(strings.TrimPrefix(filePath, l.folder))
+			if err != nil {
+				log.Printf("watcher update action on %s failed: %v", filePath, err)
+			}
+		case notify.InMovedFrom, notify.InDelete, notify.Remove:
+			filePath := strings.TrimPrefix(ei.Path(), cwd)
+			log.Printf("cleaning file %s", filePath)
+			err := l.clean(strings.TrimPrefix(filePath, l.folder))
+			if err != nil {
+				log.Printf("watcher clean action on %s failed: %v", filePath, err)
 			}
 		}
-	}()
-
-	err = watcher.Add(folder)
-	if err != nil {
-		log.Fatal(err)
 	}
-	<-done
 }
 
 func (s *server) logRequest(req *http.Request) {

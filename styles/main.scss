@@ -237,18 +237,17 @@ article {
 			text-decoration: none;
 			background-image: linear-gradient(
 				transparent 80%, 
-				$lightColor 80%, 
-				$lightColor 85%, 
-				transparent 85%
+				lighten($lightColor, 15%) 80%,
+				lighten($lightColor, 15%) 87.5%,
+				transparent 87.5%
 			);
 
 			&:hover {
-				color: $bodyColor;
 				background-image: linear-gradient(
 					transparent 80%, 
-					lighten($lightColor, 15%) 80%,
-					lighten($lightColor, 15%) 85%,
-					transparent 85%
+					lighten($bodyColor, 15%) 80%,
+					lighten($bodyColor, 15%) 87.5%,
+					transparent 87.5%
 				);
 			}
 		}
