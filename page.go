@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/aymerick/raymond"
 	"github.com/mitchellh/mapstructure"
@@ -20,7 +21,7 @@ import (
 type Metadata struct {
 	Title   string
 	Summary string
-	Date    string // TODO: better representation? time.Time might cause timezone issues...
+	Time    int64 // unix timestamp
 }
 
 // Page stores the contents of a blog post.
@@ -75,4 +76,50 @@ func newPage(slug string) (*Page, error) {
 
 func (p *Page) render(tpl *raymond.Template) (string, error) {
 	return tpl.Exec(p)
+}
+
+func (p *Page) String() string {
+	return p.Slug
+}
+
+type pages []*Page
+
+func insertOrUpdate(ps pages, p *Page) pages {
+	defer sort.Sort(ps)
+	for i, pg := range ps {
+		if pg.Slug == p.Slug {
+			ps[i] = p
+			return ps
+		}
+	}
+	ps = append(ps, p)
+	return ps
+}
+
+func remove(ps pages, slug string) pages {
+	for i, pg := range ps {
+		if pg.Slug == slug {
+			ps = append(ps[:i], ps[i+1:]...)
+			break
+		}
+	}
+	fmt.Println(ps)
+	return ps
+}
+
+// Len implements sort.Interface
+func (ps pages) Len() int {
+	return len(ps)
+}
+
+// Less implements sort.Interface
+func (ps pages) Less(i, j int) bool {
+	return ps[i].Metadata.Time > ps[j].Metadata.Time
+}
+
+// Swap implements sort.Interface
+func (ps pages) Swap(i, j int) {
+	temp := ps[i]
+	ps[i] = ps[j]
+	ps[j] = temp
 }

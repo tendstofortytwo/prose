@@ -7,8 +7,11 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aymerick/raymond"
 	"github.com/rjeczalik/notify"
@@ -16,11 +19,13 @@ import (
 )
 
 type server struct {
-	pages         []*Page
 	staticHandler http.Handler
 
 	tplMutex  sync.RWMutex
 	templates map[string]*raymond.Template
+
+	pgMutex sync.RWMutex
+	pages
 }
 
 func newServer() (*server, error) {
@@ -42,6 +47,27 @@ func newServer() (*server, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	pagesLn := &listener{
+		folder: "posts/",
+		update: func(file string) error {
+			s.pgMutex.Lock()
+			defer s.pgMutex.Unlock()
+			page, err := newPage(strings.TrimSuffix(file, ".md"))
+			if err != nil {
+				return err
+			}
+			s.pages = insertOrUpdate(s.pages, page)
+			return nil
+		},
+		clean: func(file string) error {
+			s.pgMutex.Lock()
+			defer s.pgMutex.Unlock()
+			s.pages = remove(s.pages, strings.TrimSuffix(file, ".md"))
+			return nil
+		},
+	}
+	go pagesLn.listen()
 
 	templatesLn := &listener{
 		folder: "templates/",
@@ -99,7 +125,9 @@ func (s *server) refreshPages() error {
 		return err
 	}
 
-	s.pages = make([]*Page, 0, len(files))
+	s.pgMutex.Lock()
+	defer s.pgMutex.Unlock()
+	s.pages = make(pages, 0, len(files))
 	for _, f := range files {
 		filename := f.Name()
 
@@ -112,6 +140,7 @@ func (s *server) refreshPages() error {
 			log.Printf("Loaded page %s", filename)
 		}
 	}
+	sort.Sort(s.pages)
 
 	return nil
 }
@@ -121,6 +150,14 @@ func loadTemplate(file string) (*raymond.Template, error) {
 	if err != nil {
 		return nil, fmt.Errorf("Could not parse %s template: %w", file, err)
 	}
+	tpl.RegisterHelper("datetime", func(timeStr string) string {
+		timestamp, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			log.Printf("Could not parse timestamp '%v', falling back to current time", timeStr)
+			timestamp = time.Now().Unix()
+		}
+		return time.Unix(timestamp, 0).Format("Jan 2 2006, 3:04 PM")
+	})
 	log.Printf("Loaded template: %s", file)
 	return tpl, nil
 }
@@ -303,6 +340,8 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	s.pgMutex.RLock()
+	defer s.pgMutex.RUnlock()
 	for _, p := range s.pages {
 		if p.Slug == slug {
 			s.renderPage(p, res, req)
@@ -345,6 +384,8 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 
 	var posts string
 
+	s.pgMutex.RLock()
+	defer s.pgMutex.RUnlock()
 	for _, p := range s.pages {
 		summary, err := p.render(s.templates["summary"])
 		if err != nil {
