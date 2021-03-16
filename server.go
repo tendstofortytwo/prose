@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -24,8 +23,8 @@ type server struct {
 	tplMutex  sync.RWMutex
 	templates map[string]*raymond.Template
 
-	pgMutex sync.RWMutex
-	pages
+	postsMutex sync.RWMutex
+	postList
 }
 
 func newServer() (*server, error) {
@@ -33,10 +32,13 @@ func newServer() (*server, error) {
 		staticHandler: http.FileServer(http.Dir("static/")),
 	}
 
-	err := s.refreshPages()
+	posts, err := newPostList()
 	if err != nil {
 		return nil, err
 	}
+	s.postsMutex.Lock()
+	s.postList = posts
+	s.postsMutex.Unlock()
 
 	err = s.refreshTemplates()
 	if err != nil {
@@ -48,26 +50,12 @@ func newServer() (*server, error) {
 		return nil, err
 	}
 
-	pagesLn := &listener{
-		folder: "posts/",
-		update: func(file string) error {
-			s.pgMutex.Lock()
-			defer s.pgMutex.Unlock()
-			page, err := newPage(strings.TrimSuffix(file, ".md"))
-			if err != nil {
-				return err
-			}
-			s.pages = insertOrUpdate(s.pages, page)
-			return nil
-		},
-		clean: func(file string) error {
-			s.pgMutex.Lock()
-			defer s.pgMutex.Unlock()
-			s.pages = remove(s.pages, strings.TrimSuffix(file, ".md"))
-			return nil
-		},
-	}
-	go pagesLn.listen()
+	postsLn := newPostListener(func(updateFn func(postList) postList) {
+		s.postsMutex.Lock()
+		defer s.postsMutex.Unlock()
+		s.postList = updateFn(s.postList)
+	})
+	go postsLn.listen()
 
 	templatesLn := &listener{
 		folder: "templates/",
@@ -117,32 +105,6 @@ func newServer() (*server, error) {
 	go stylesLn.listen()
 
 	return s, nil
-}
-
-func (s *server) refreshPages() error {
-	files, err := os.ReadDir("posts/")
-	if err != nil {
-		return err
-	}
-
-	s.pgMutex.Lock()
-	defer s.pgMutex.Unlock()
-	s.pages = make(pages, 0, len(files))
-	for _, f := range files {
-		filename := f.Name()
-
-		if strings.HasSuffix(filename, ".md") {
-			page, err := newPage(strings.TrimSuffix(filename, ".md"))
-			if err != nil {
-				return fmt.Errorf("could not render %s: %s", filename, err)
-			}
-			s.pages = append(s.pages, page)
-			log.Printf("Loaded page %s", filename)
-		}
-	}
-	sort.Sort(s.pages)
-
-	return nil
 }
 
 func loadTemplate(file string) (*raymond.Template, error) {
@@ -340,11 +302,11 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	s.pgMutex.RLock()
-	defer s.pgMutex.RUnlock()
-	for _, p := range s.pages {
+	s.postsMutex.RLock()
+	defer s.postsMutex.RUnlock()
+	for _, p := range s.postList {
 		if p.Slug == slug {
-			s.renderPage(p, res, req)
+			s.postPage(p, res, req)
 			return
 		}
 	}
@@ -358,7 +320,7 @@ func (s *server) errorInRequest(res http.ResponseWriter, req *http.Request, err 
 	log.Printf("ERR %s: %s", req.URL.Path, err)
 }
 
-func (s *server) createPage(title, contents string) (string, error) {
+func (s *server) createWebPage(title, contents string) (string, error) {
 	ctx := map[string]interface{}{
 		"title":    title,
 		"contents": contents,
@@ -366,13 +328,13 @@ func (s *server) createPage(title, contents string) (string, error) {
 	return s.templates["page"].Exec(ctx)
 }
 
-func (s *server) renderPage(p *Page, res http.ResponseWriter, req *http.Request) {
+func (s *server) postPage(p *Post, res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("content-type", "text/html")
 	contents, err := p.render(s.templates["fullpost"])
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
-	page, err := s.createPage(p.Metadata.Title, contents)
+	page, err := s.createWebPage(p.Metadata.Title, contents)
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
@@ -384,17 +346,17 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 
 	var posts string
 
-	s.pgMutex.RLock()
-	defer s.pgMutex.RUnlock()
-	for _, p := range s.pages {
+	s.postsMutex.RLock()
+	defer s.postsMutex.RUnlock()
+	for _, p := range s.postList {
 		summary, err := p.render(s.templates["summary"])
 		if err != nil {
-			log.Printf("could not render page summary for %s", p.Slug)
+			log.Printf("could not render post summary for %s", p.Slug)
 		}
 		posts = posts + summary
 	}
 
-	page, err := s.createPage("Home", posts)
+	page, err := s.createWebPage("Home", posts)
 
 	if err != nil {
 		s.errorInRequest(res, req, err)
