@@ -111,14 +111,15 @@ func newPostList() (postList, error) {
 }
 
 func insertOrUpdatePost(pl postList, p *Post) postList {
-	defer sort.Sort(pl)
 	for i, post := range pl {
 		if post.Slug == p.Slug {
 			pl[i] = p
+			sort.Sort(pl)
 			return pl
 		}
 	}
 	pl = append(pl, p)
+	sort.Sort(pl)
 	return pl
 }
 
