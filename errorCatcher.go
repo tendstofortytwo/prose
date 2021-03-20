@@ -45,7 +45,7 @@ func (ec *errorCatcher) WriteHeader(statusCode int) {
 		if err != nil {
 			return
 		}
-		ec.res.Header().Add("content-type", "text/html")
+		ec.res.Header().Set("Content-Type", "text/html; charset=utf-8")
 		ec.res.WriteHeader(statusCode)
 		ec.res.Write([]byte(page))
 		ec.handledError = true
@@ -63,7 +63,7 @@ func (ec *errorCatcher) WriteHeader(statusCode int) {
 		if err != nil {
 			return
 		}
-		ec.res.Header().Add("content-type", "text/html")
+		ec.res.Header().Set("Content-Type", "text/html; charset=utf-8")
 		ec.res.WriteHeader(statusCode)
 		ec.res.Write([]byte(page))
 		ec.handledError = true
