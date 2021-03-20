@@ -66,9 +66,9 @@ router.get('/:slug', function(req, res) {
 });
 ```
 
-The second route is the problem -- it seems that Go's built-in router doesn't support parameters in the URL by default. The internet seems to be torn on this issue -- half the people suggest that I use something like the [gorilla/mux](https://github.com/gorilla/mux) package, while the other half suggest [creating my own router](https://benhoyt.com/writings/go-routing/). I don't really like either solution. The first goes against the spirit of what I wanted to do when I started -- use the standard library tools to create the server, while the second seems a bit overkill -- I only need to serve a home page, a page for individual blogs, some static content, and maybe a custom error page. 
+The second route is the problem -- it seems that Go's built-in router doesn't support parameters in the URL by default. The internet seems to be torn on this issue -- half the people suggest that I use something like the [gorilla/mux](https://github.com/gorilla/mux) package, while the other half suggest [creating my own router](https://benhoyt.com/writings/go-routing/). I don't really like either solution. The first goes against the spirit of what I wanted to do when I started -- use the standard library tools to create the server. On the other hand, the second seems a bit overkill -- I only need to serve a home page, a page for individual blogs, some static content, and maybe a custom error page. 
 
-I ended up going with something similar to [Alex Wagner's approach](https://blog.merovius.de/2017/06/18/how-not-to-use-an-http-router.html). He calls it "not using an HTTP router", but my solution is slightly different, to where I don't think that's quite correct for me. He first looks at the path prefix, then sends it to another handler which handles that paths of that prefix, including handling different HTTP verbs. I have a similar solution, but each of my downstream handlers are so small, that the thing I ended up with essentially a router anyway. That said, a router for a simple website can be as simple as the website itself. Here's what my router currently looks like (with some implementation details elided):
+I ended up going with something similar to [Alex Wagner's approach](https://blog.merovius.de/2017/06/18/how-not-to-use-an-http-router.html). He suggests not using a big monolithic "router" module at all, but to make small routing decisions wherever necessary. In his example, he first looks at the path prefix, then sends it to another handler which handles paths of that prefix, including handling different HTTP verbs. I have a similar solution, but each of my downstream handlers is so small, that the thing I ended up with was essentially a monolithic router. That said, a router for a simple website can be as simple as the website itself, so this is not necessarily an issue. I am using a format that should let me compartmentalize decisions similarly later, if need be. Here's what my router currently looks like (with some implementation details elided):
 
 ```go
 func (s *server) router(res http.ResponseWriter, req *http.Request) {
@@ -92,7 +92,7 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 }
 ```
 
-That's it. No more routing code required. All I do is look at the path after the `/`. If it's empty, return the home page. If it matches a blog post slug, render that blog post. Otherwise, pass it to the static handler, which will serve a file if possible, or a 404 otherwise. I could probably clean this up a bit -- make the page handlers be standard-library-compatible, and improve the logging support (the current implementation won't be able to log the HTTP status code). These things are fixable, though, and when I fix them, they won't increase the size of the router itself.
+That's it. No more routing code required. All I do is look at the path after the `/`. If it's empty, return the home page. If it matches a blog post slug, render that blog post. If not, pass it to the static handler, which will serve a file if possible, or a 404 otherwise. I could probably clean this up a bit -- make the page handlers be standard-library-compatible, and improve the logging support (the current implementation won't be able to log the HTTP status code). These things are fixable, though, and when I fix them, they won't increase the size of the router itself.
 
 You may notice though, that I said something about a custom error page, and the only thing that seems to be able to handle it is that `&errorCatcher{...}` wrapper. About that...
 
@@ -100,11 +100,11 @@ You may notice though, that I said something about a custom error page, and the 
 
 By default, Go doesn't provide any custom HTTP error handling hooks, which I found a bit weird -- surely a server-wide 404 page is a common enough ask to build that into the net/http package? But that's not too huge a problem, because Go provides something else -- interfaces.
 
-If you're not familiar with Go interfaces, an interface is essentially a list of function signatures for methods, and any type that implements methods like these automatically implements that interface. Notably for us, `http.ResponseWriter` is an interface. You can see the complete interface [here](https://golang.org/pkg/net/http/#ResponseWriter), but the interesting part are the functions `WriteHeader()` and `Write()`. The documentation for the `ResponseWriter` states that:
+If you're not familiar with Go interfaces, an interface is essentially a list of function signatures for methods, and any type that implements methods like these automatically implements that interface. Notably for us, `http.ResponseWriter` is an interface. You can see the complete interface [here](https://golang.org/pkg/net/http/#ResponseWriter), but the interesting part are the functions `WriteHeader()` and `Write()`. The documentation for the `ResponseWriter.Write()` states that:
 
 > If WriteHeader is not called explicitly, the first call to Write will trigger an implicit `WriteHeader(http.StatusOK)`. Thus explicit calls to WriteHeader are mainly used to send error codes.
 
-Which means, if anyone wants to write an HTTP error, they have to call `WriteHeader()`, which we could just create our own version of, if we make our own `ResponseWriter` that wraps the one in the standard library. Then we can intercept any error-y HTTP codes like so:
+Which means that if anyone wants to write an HTTP error, they will call `WriteHeader()`. We could just create our own version of that by making our own `ResponseWriter` that wraps the one in the standard library. Then we can intercept any error-y HTTP codes like so:
 
 ```go
 func (ec *errorCatcher) WriteHeader(statusCode int) {
@@ -124,7 +124,7 @@ func (ec *errorCatcher) WriteHeader(statusCode int) {
 }
 ```
 
-Now this is pretty cool. But recall that in my case, "handling" means serving my own HTTP error pages. Which means that I'll be calling `ec.res.Write(htmlContent)` or something of the sort. But whoever just called `WriteHeader()` doesn't know this, and they're going to be sending their own `Write()` calls with their own error page content! I don't want two error pages worth of content to show up, so I fixed this with an age-old trick: lying to the caller.
+Now this is pretty cool. But recall that in my case, "handling the error" means serving my own HTTP error pages. Which means that I'll be calling `ec.res.Write(htmlContent)` or something of the sort. But whoever just called `WriteHeader()` doesn't know this, and they're going to be sending their own `Write()` calls with their own error page content! I don't want two error pages worth of content to show up, so I fixed this with an age-old trick: lying to the caller.
 
 First, we fabricate the fiction:
 
