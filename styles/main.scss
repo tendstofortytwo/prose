@@ -6,26 +6,46 @@
 	transition: all 0.1s ease-in-out;
 }
 
+$ls: 1.4rem;
+
+$bgColorLight: white;
+$bodyColorLight: #555;
+$strongColorLight: #333;
+$fadeColorLight: #999;
+$accentColorLight: #3498db;
+
+$bgColorDark: #2b3d4f;
+$bodyColorDark: #ccd;
+$strongColorDark: #eaeaf5;
+$fadeColorDark: #99b;
+$accentColorDark: #3498db;
+
+:root {
+	--bgColor: #{$bgColorLight};
+	--bodyColor: #{$bodyColorLight};
+	--faintBodyColor: #{lighten($bodyColorLight, 15%)};
+	--strongColor: #{$strongColorLight};
+	--fadeColor: #{$fadeColorLight};
+	--faintFadeColor: #{lighten($fadeColorLight, 15%)};
+	--accentColor: #{$accentColorLight};
+}
+
+::selection {
+	background-color: var(--accentColor);
+}
+
 html {
 	font-size: 14pt;
 	min-height: 100%;
 	position: relative;
 }
 
-$ls: 1.4rem;
-
-$bgColor: white;
-$bodyColor: #555;
-$strongColor: #333;
-$lightColor: #999;
-$accentColor: #3498db;
-	
 body {
 	height: 100%;
-	background-color: $bgColor;
+	background-color: var(--bgColor);
 	font-family: 'Nunito', sans-serif;
 	margin: 0;
-	color: $bodyColor;
+	color: var(--bodyColor);
 }
 
 .grid {
@@ -55,7 +75,7 @@ button.grid-button {
 	outline: none;
 	font: inherit;
 	font-size: 0.8rem;
-	background: $accentColor;
+	background: var(--accentColor);
 	color: white;
 	z-index: 6000;
 	border-radius: 0.2*$ls;
@@ -74,7 +94,7 @@ header {
 	h1.title {
 		margin: 0;
 		line-height: 3*$ls;
-		color: $strongColor;
+		color: var(--strongColor);
 		font-size: 1.8rem;
 		padding: 0 $ls;
 	}
@@ -89,7 +109,7 @@ header {
 		height: 100%;
 		
 		a {
-			color: $strongColor;
+			color: var(--strongColor);
 			text-decoration: none;
 			display: block;
 			line-height: 3*$ls;
@@ -139,16 +159,16 @@ article {
 	
 	h1 {
 		font-size: 2.6rem;
-		margin: 0;
+		margin: 1*$ls 0 0;
 		line-height: 2*$ls;
-		color: $strongColor;
+		color: var(--strongColor);
 	}
 	
 	h2 {
 		font-size: 1.4rem;
 		font-weight: 300;
 		font-style: italic;
-		color: $lightColor;
+		color: var(--fadeColor);
 		line-height: 1*$ls;
 		margin: 1*$ls 0 0;
 	}
@@ -157,28 +177,28 @@ article {
 		line-height: $ls;
 		margin: $ls 0;
 		font-size: 1.3rem;
-		color: $strongColor;
+		color: var(--strongColor);
 	}
 	
 	h4 {
 		line-height: $ls;
 		margin: $ls 0;
 		font-size: 1rem;
-		color: $strongColor;
+		color: var(--strongColor);
 	}
 	
 	p {
 		line-height: $ls;
 		margin: $ls 0 0;
-		color: $bodyColor;
+		color: var(--bodyColor);
 	}
 
 
 	blockquote {
 		margin: $ls 0;
 		padding: 0 $ls;
-		border-left: 0.2rem solid $lightColor;
-		color: $lightColor;
+		border-left: 0.2rem solid var(--fadeColor);
+		color: var(--fadeColor);
 		font-style: italic;
 
 		p {
@@ -188,18 +208,20 @@ article {
 	
 	code {
 		font-family: 'JetBrains Mono', monospace;
-		font-size: 0.9em;
-		color: $strongColor;
+		font-size: 0.85em;
+		color: var(--strongColor);
 	}
 	
 	pre {
-		margin: $ls 0;
+		font-size: 0.9em;
+		margin: 2*$ls 0;
 		line-height: $ls;
 		max-width: 100%;
 		overflow-x: auto;
-		padding: 0 2*$ls;
+		padding: 0 $ls;
 		
 		code {
+			font-size: 1em;
 			line-height: $ls;
 			display: block;
 		}
@@ -226,34 +248,34 @@ article {
 			line-height: 2*$ls;
 			text-align: center;
 			font-style: italic;
-			color: $lightColor;
+			color: var(--fadeColor);
 			font-size: 0.8rem;
 		}
 	}
 	
 	section.content {		
 		a {
-			color: $strongColor;
+			color: var(--strongColor);
 			text-decoration: none;
 			background-image: linear-gradient(
 				transparent 80%, 
-				lighten($lightColor, 15%) 80%,
-				lighten($lightColor, 15%) 87.5%,
+				var(--faintFadeColor) 80%,
+				var(--faintFadeColor) 87.5%,
 				transparent 87.5%
 			);
 
 			&:hover {
 				background-image: linear-gradient(
 					transparent 80%, 
-					lighten($bodyColor, 15%) 80%,
-					lighten($bodyColor, 15%) 87.5%,
+					var(--faintBodyColor) 80%,
+					var(--faintBodyColor) 87.5%,
 					transparent 87.5%
 				);
 			}
 		}
 		
 		ul, ol {
-			color: $bodyColor;
+			color: var(--bodyColor);
 			margin: $ls 0;
 			padding: 0 0 0 $ls;
 			line-height: $ls;
@@ -279,7 +301,7 @@ article {
 					text-align: center;
 					line-height: $ls;
 					font-weight: bold;
-					color: $strongColor;
+					color: var(--strongColor);
 				}
 			}
 		}
@@ -289,7 +311,7 @@ article {
 		display: block;
 		height: 3*$ls;
 		line-height: 3*$ls;
-		color: $accentColor;
+		color: var(--accentColor);
 		text-align: center;
 		text-decoration: none;
 	}
@@ -298,4 +320,77 @@ article {
 footer {
 	text-align: center;
 	padding: $ls 0;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bgColor: #{$bgColorDark};
+		--bodyColor: #{$bodyColorDark};
+		--faintBodyColor: #{darken($bodyColorDark, 15%)};
+		--strongColor: #{$strongColorDark};
+		--fadeColor: #{$fadeColorDark};
+		--faintFadeColor: #{darken($fadeColorDark, 15%)};
+		--accentColor: #{$accentColorDark};
+	}
+
+	pre {
+		filter: invert(100%);
+		background-color: invert($bgColorDark) !important;
+		color: invert($strongColorDark);
+
+		&::selection, ::selection {
+			background-color: invert($accentColorDark);
+		}
+	}
+}
+
+@media(max-width: 500px) {
+	header {
+		height: 6*$ls;
+		flex-direction: column;
+		align-items: stretch;
+		justify-content: flex-start;
+		text-align: center;
+
+		nav {
+			justify-content: center;
+
+			a {
+				padding: 0 0.5*$ls;
+				flex: 1;
+
+				&:before {
+					top: auto;
+					bottom: 0;
+				}
+			}
+		}
+	}
+
+	main {
+		margin: $ls 0;
+	}
+
+	article {
+		padding: $ls;
+
+		date {
+			font-size: 0.75rem;
+		}
+
+		h1 {
+			font-size: 1.5rem;
+			line-height: $ls;
+			margin: $ls 0 0;
+		}
+
+		h2 {
+			font-size: 1rem;
+		}
+
+		pre {
+			margin: $ls 0;
+			padding: 0;
+		}
+	}
 }
