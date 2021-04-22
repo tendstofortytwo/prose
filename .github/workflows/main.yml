@@ -11,4 +11,4 @@ jobs:
       with:
         machine: 'magnesium'
     - name: Output
-      run: echo "tarball generated and pushed: ${{ steps.hello.outputs.filename }}"
+      run: 'echo "tarball generated and pushed: ${{ steps.hello.outputs.filename }}"'
