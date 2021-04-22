@@ -1,0 +1,14 @@
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    name: Deploy blog to magnesium
+    steps:
+    - name: Deploy
+      id: deploy
+      uses: tailscale/tailscale-deploy-github@v1
+      with:
+        machine: 'magnesium'
+    - name: Output
+      run: echo "tarball generated and pushed: ${{ steps.hello.outputs.filename }}"
