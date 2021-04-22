@@ -7,8 +7,11 @@ jobs:
     steps:
     - name: Deploy
       id: deploy
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
       uses: tailscale/tailscale-deploy-github@v1
       with:
-        machine: 'magnesium'
+        machine-name: 'magnesium'
     - name: Output
       run: 'echo "tarball generated and pushed: ${{ steps.hello.outputs.filename }}"'
