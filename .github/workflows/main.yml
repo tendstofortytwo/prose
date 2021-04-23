@@ -3,7 +3,7 @@ on: [push]
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy blog to magnesium
+    name: Deploy blog to hydrogen
     steps:
     - name: Deploy
       id: deploy
@@ -12,6 +12,6 @@ jobs:
         TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
       uses: tailscale/tailscale-deploy-github@v1
       with:
-        machine-name: 'magnesium'
+        machine-name: 'hydrogen'
     - name: Output
       run: 'echo "tarball generated and pushed: ${{ steps.hello.outputs.filename }}"'
