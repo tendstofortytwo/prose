@@ -30,8 +30,6 @@ jobs:
         ssh-keyscan $MACHINE_IP >> ~/.ssh/known_hosts
         printf "%s" "$SSH_KEY" > ~/.ssh/key
         chmod 600 ~/.ssh/key
-        eval "$(ssh-agent -s)"
-        ssh-add ~/.ssh/key
 
     - name: Fetch code
       id: fetch
@@ -50,5 +48,5 @@ jobs:
         tar -czf $FILENAME prose static/ styles/ templates/ posts/
         MACHINE_IP="$(tailscale ip -6 $MACHINE)"
         echo $FILENAME "github@[$MACHINE_IP]:/home/github/"
-        scp $FILENAME "github@[$MACHINE_IP]:/home/github/"
-        ssh "github@$MACHINE_IP" "mkdir -p ~/prose && tar -C ~/prose -xzf ~/$FILENAME"
+        scp -i ~/.ssh/key $FILENAME "github@[$MACHINE_IP]:/home/github/"
+        ssh -i ~/.ssh/key "github@$MACHINE_IP" "mkdir -p ~/prose && tar -C ~/prose -xzf ~/$FILENAME"
