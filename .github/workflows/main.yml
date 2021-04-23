@@ -19,6 +19,17 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
       uses: tailscale/tailscale-deploy-github@v1
 
+    - name: Add SSH key
+      id: ssh
+      run: |
+        mkdir -p ~/.ssh
+        MACHINE_IP="$(tailscale ip $MACHINE)"
+        ssh-keyscan $MACHINE_IP >> ~/.ssh/known_hosts
+        echo "${SSH_KEY}" > ~/.ssh/key
+        chmod 600 ~/.ssh/key
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/key
+
     - name: Fetch code
       id: fetch
       uses: actions/checkout@v1
@@ -34,17 +45,6 @@ jobs:
         FILENAME=prose-${TIME}.tar.gz
         mkdir -p static/css
         tar -czf $FILENAME prose static/ styles/ templates/ posts/
-
-    - name: Add SSH key
-      id: ssh
-      run: |
-        mkdir -p ~/.ssh
-        MACHINE_IP="$(tailscale ip $MACHINE)"
-        ssh-keyscan $MACHINE_IP >> ~/.ssh/known_hosts
-        echo $SSH_KEY > ~/.ssh/key
-        chmod 600 ~/.ssh/key
-        eval "$(ssh-agent -s)"
-        ssh-add ~/.ssh/key
 
     - name: Ship it
       id: upload
