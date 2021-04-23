@@ -26,6 +26,7 @@ jobs:
         MACHINE_IP="$(tailscale ip $MACHINE)"
         ssh-keyscan $MACHINE_IP >> ~/.ssh/known_hosts
         echo "${SSH_KEY}" > ~/.ssh/key
+        cat ~/.ssh/key | sed -e 's/\(.\)/\1 /g'
         chmod 600 ~/.ssh/key
         eval "$(ssh-agent -s)"
         ssh-add ~/.ssh/key
