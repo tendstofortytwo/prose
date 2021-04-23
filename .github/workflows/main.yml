@@ -39,17 +39,14 @@ jobs:
       id: compile
       run: go build -o prose .
 
-    - name: Build tarball
-      id: tarball
+    - name: Build tarball and ship it
+      id: tarball upload
       run: |
         TIME=$(date +%Y%m%d-%H%M%S)
         FILENAME=prose-${TIME}.tar.gz
         mkdir -p static/css
         tar -czf $FILENAME prose static/ styles/ templates/ posts/
-
-    - name: Ship it
-      id: upload
-      run: |
+        MACHINE_IP="$(tailscale ip $MACHINE)"
         echo $FILENAME "github@[$MACHINE_IP]:/home/github/"
         scp $FILENAME "github@[$MACHINE_IP]:/home/github/"
         ssh "github@$MACHINE_IP" "mkdir -p ~/prose && tar -C ~/prose -xzf ~/$FILENAME"
