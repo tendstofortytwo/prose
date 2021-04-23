@@ -40,7 +40,7 @@ jobs:
       run: go build -o prose .
 
     - name: Build tarball and ship it
-      id: tarball upload
+      id: tarball-upload
       run: |
         TIME=$(date +%Y%m%d-%H%M%S)
         FILENAME=prose-${TIME}.tar.gz
