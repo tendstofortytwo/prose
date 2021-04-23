@@ -5,6 +5,11 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy blog to hydrogen
     steps:
+    - name: Setup Go 1.16
+      uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16'
+      run: go version
     - name: Deploy
       id: deploy
       env:
