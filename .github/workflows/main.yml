@@ -6,16 +6,48 @@ jobs:
     name: Deploy blog to hydrogen
     steps:
     - name: Setup Go 1.16
+      id: go
       uses: actions/setup-go@v2
       with:
         go-version: '^1.16'
-    - name: Deploy
-      id: deploy
+
+    - name: Setup Tailscale
+      id: ts-setup
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
+        SSH_KEY: ${{ secrets.SSH_KEY }}
       uses: tailscale/tailscale-deploy-github@v1
-      with:
-        machine-name: 'hydrogen'
-    - name: Output
-      run: 'echo "tarball generated and pushed: ${{ steps.hello.outputs.filename }}"'
+
+    - name: Fetch code
+      id: fetch
+      uses: actions/checkout@v1
+
+    - name: Compile blog binary
+      id: compile
+      run: go build . -o prose
+
+    - name: Build tarball
+      id: tarball
+      run: |
+        TIME=$(date +%Y%m%d-%H%M%S)
+        FILENAME=prose-${TIME}.tar.gz
+        mkdir -p static/css
+        tar -czf $FILENAME prose static/ styles/ templates/ posts/
+
+    - name: Add SSH key
+      id: ssh
+      run: |
+        mkdir -p ~/.ssh
+        MACHINE_IP="$(tailscale ip $MACHINE)"
+        ssh-keyscan $MACHINE_IP >> ~/.ssh/known_hosts
+        echo $SSH_KEY > ~/.ssh/key
+        chmod 600 ~/.ssh/key
+        eval "$(ssh-agent -s)"
+        ssh-add ~/.ssh/key
+
+    - name: Ship it
+      id: upload
+      run: |
+        scp $FILENAME "github@[$MACHINE_IP]:/home/github/"
+        ssh "github@$MACHINE_IP" "mkdir -p ~/prose && tar -C ~/prose -xzf ~/$FILENAME"
