@@ -16,11 +16,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
-        SSH_KEY: ${{ secrets.SSH_KEY }}
       uses: tailscale/tailscale-deploy-github@v1
 
     - name: Add SSH key
       id: ssh
+      env:
+        SSH_KEY: ${{ secrets.SSH_KEY }}
       run: |
         mkdir -p ~/.ssh
         MACHINE_IP="$(tailscale ip $MACHINE)"
