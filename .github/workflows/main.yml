@@ -27,7 +27,6 @@ jobs:
         MACHINE_IP="$(tailscale ip $MACHINE)"
         ssh-keyscan $MACHINE_IP >> ~/.ssh/known_hosts
         printf "%s" "$SSH_KEY" > ~/.ssh/key
-        wc -c ~/.ssh/key
         chmod 600 ~/.ssh/key
         eval "$(ssh-agent -s)"
         ssh-add ~/.ssh/key
@@ -51,5 +50,6 @@ jobs:
     - name: Ship it
       id: upload
       run: |
+        echo $FILENAME "github@[$MACHINE_IP]:/home/github/"
         scp $FILENAME "github@[$MACHINE_IP]:/home/github/"
         ssh "github@$MACHINE_IP" "mkdir -p ~/prose && tar -C ~/prose -xzf ~/$FILENAME"
