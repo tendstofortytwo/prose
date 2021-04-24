@@ -1,8 +1,6 @@
 package main
 
 import (
-	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"os"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/aymerick/raymond"
 	"github.com/rjeczalik/notify"
-	"github.com/wellington/go-libsass"
 )
 
 type server struct {
@@ -23,6 +20,9 @@ type server struct {
 
 	postsMutex sync.RWMutex
 	postList
+
+	cssMutex sync.RWMutex
+	styles   map[string]string
 }
 
 func newServer() (*server, error) {
@@ -46,10 +46,13 @@ func newServer() (*server, error) {
 	s.templates = tpls
 	s.tplMutex.Unlock()
 
-	err = s.refreshStyles()
+	styles, err := newStylesMap()
 	if err != nil {
 		return nil, err
 	}
+	s.cssMutex.Lock()
+	s.styles = styles
+	s.cssMutex.Unlock()
 
 	postsLn := newPostListener(func(updateFn func(postList) postList) {
 		s.postsMutex.Lock()
@@ -65,93 +68,14 @@ func newServer() (*server, error) {
 	})
 	go templatesLn.listen()
 
-	stylesLn := &listener{
-		folder: "styles/",
-		update: func(file string) error {
-			var err error
-			if strings.HasSuffix(file, ".scss") {
-				err = loadSassStylesheet(file)
-			} else if strings.HasSuffix(file, ".css") {
-				err = loadRegularStylesheet(file)
-			}
-			return err
-		},
-		clean: func(file string) error {
-			var err error
-			if strings.HasSuffix(file, ".scss") {
-				err = os.Remove("static/style/" + strings.TrimSuffix(file, ".scss") + ".css")
-			} else if strings.HasSuffix(file, ".css") {
-				err = os.Remove("static/style/" + file)
-			}
-			return err
-		},
-	}
+	stylesLn := newStylesListener(func(updateFn func(map[string]string)) {
+		s.cssMutex.Lock()
+		defer s.cssMutex.Unlock()
+		updateFn(s.styles)
+	})
 	go stylesLn.listen()
 
 	return s, nil
-}
-
-func loadSassStylesheet(filename string) error {
-	in, err := os.Open("styles/" + filename)
-	if err != nil {
-		return fmt.Errorf("Could not open style infile %s: %w", filename, err)
-	}
-	output := strings.TrimSuffix(filename, ".scss") + ".css"
-	out, err := os.Create("static/css/" + output)
-	if err != nil {
-		return fmt.Errorf("Could not open style outfile %s: %w", output, err)
-	}
-	comp, err := libsass.New(out, in)
-	if err != nil {
-		return fmt.Errorf("Could not start sass compiler for file %s: %w", filename, err)
-	}
-	if err = comp.Run(); err != nil {
-		return fmt.Errorf("Could not generate stylesheet %s: %w", filename, err)
-	}
-	return nil
-}
-
-func loadRegularStylesheet(filename string) error {
-	in, err := os.Open("styles/" + filename)
-	if err != nil {
-		return fmt.Errorf("Could not open style infile %s: %w", filename, err)
-	}
-	out, err := os.Create("static/css/" + filename)
-	if err != nil {
-		return fmt.Errorf("Could not open style outfile %s: %w", filename, err)
-	}
-	_, err = io.Copy(out, in)
-	if err != nil {
-		return fmt.Errorf("Could not copy stylesheet %s: %s", filename, err)
-	}
-	return nil
-}
-
-func (s *server) refreshStyles() error {
-	styles, err := os.ReadDir("styles/")
-	if err != nil {
-		return fmt.Errorf("Could not load styles directory: %s", err)
-	}
-
-	for _, s := range styles {
-		filename := s.Name()
-		if strings.HasSuffix(filename, ".scss") {
-			err := loadSassStylesheet(filename)
-			if err != nil {
-				return err
-			}
-		} else if strings.HasSuffix(filename, ".css") {
-			err := loadRegularStylesheet(filename)
-			if err != nil {
-				return err
-			}
-		} else {
-			log.Printf("Skipping stylesheet %s, don't know how to handle", filename)
-			continue
-		}
-		log.Printf("Loaded stylesheet %s", filename)
-	}
-	return nil
 }
 
 type listener struct {
@@ -250,6 +174,14 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 		}
 	}
 
+	if strings.HasPrefix(slug, "css/") {
+		filename := strings.TrimPrefix(slug, "css/")
+		ok := s.loadStylesheet(res, req, filename)
+		if ok {
+			return
+		}
+	}
+
 	s.staticHandler.ServeHTTP(res, req)
 }
 
@@ -302,4 +234,16 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 	}
 
 	res.Write([]byte(page))
+}
+
+func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, filename string) (ok bool) {
+	s.cssMutex.RLock()
+	defer s.cssMutex.RUnlock()
+	contents, ok := s.styles[filename]
+	if !ok {
+		return false
+	}
+	res.Header().Add("content-type", "text/css")
+	res.Write([]byte(contents))
+	return ok
 }
