@@ -12,14 +12,10 @@ import (
 type server struct {
 	staticHandler http.Handler
 
-	tplMutex  sync.RWMutex
+	mu        sync.RWMutex
 	templates map[string]*raymond.Template
-
-	postsMutex sync.RWMutex
 	postList
-
-	cssMutex sync.RWMutex
-	styles   map[string]string
+	styles map[string]string
 }
 
 func newServer() (*server, error) {
@@ -31,43 +27,43 @@ func newServer() (*server, error) {
 	if err != nil {
 		return nil, err
 	}
-	s.postsMutex.Lock()
+	s.mu.Lock()
 	s.postList = posts
-	s.postsMutex.Unlock()
+	s.mu.Unlock()
 
 	tpls, err := loadTemplates([]string{"page", "fullpost", "summary", "notfound", "error"})
 	if err != nil {
 		return nil, err
 	}
-	s.tplMutex.Lock()
+	s.mu.Lock()
 	s.templates = tpls
-	s.tplMutex.Unlock()
+	s.mu.Unlock()
 
 	styles, err := newStylesMap()
 	if err != nil {
 		return nil, err
 	}
-	s.cssMutex.Lock()
+	s.mu.Lock()
 	s.styles = styles
-	s.cssMutex.Unlock()
+	s.mu.Unlock()
 
 	postsLn := newPostListener(func(updateFn func(postList) postList) {
-		s.postsMutex.Lock()
-		defer s.postsMutex.Unlock()
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		s.postList = updateFn(s.postList)
 	})
 	go postsLn.listen()
 
 	templatesLn := newTemplateListener(func(updateFn func(map[string]*raymond.Template)) {
-		s.tplMutex.Lock()
-		defer s.tplMutex.Unlock()
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		updateFn(s.templates)
 	})
 	go templatesLn.listen()
 
 	stylesLn := newStylesListener(func(updateFn func(map[string]string)) {
-		s.cssMutex.Lock()
-		defer s.cssMutex.Unlock()
+		s.mu.Lock()
+		defer s.mu.Unlock()
 		updateFn(s.styles)
 	})
 	go stylesLn.listen()
@@ -80,8 +76,8 @@ func (s *server) logRequest(req *http.Request) {
 }
 
 func (s *server) router(res http.ResponseWriter, req *http.Request) {
-	s.tplMutex.RLock()
-	defer s.tplMutex.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	s.logRequest(req)
 	res = &errorCatcher{
 		res:          res,
@@ -97,8 +93,8 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	s.postsMutex.RLock()
-	defer s.postsMutex.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, p := range s.postList {
 		if p.Slug == slug {
 			s.postPage(p, res, req)
@@ -149,8 +145,8 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 
 	var posts string
 
-	s.postsMutex.RLock()
-	defer s.postsMutex.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	for _, p := range s.postList {
 		summary, err := p.render(s.templates["summary"])
 		if err != nil {
@@ -169,8 +165,8 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, filename string) (ok bool) {
-	s.cssMutex.RLock()
-	defer s.cssMutex.RUnlock()
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 	contents, ok := s.styles[filename]
 	if !ok {
 		return false
