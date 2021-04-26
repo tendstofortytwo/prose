@@ -128,7 +128,7 @@ func (s *server) createWebPage(title, contents string) (string, error) {
 }
 
 func (s *server) postPage(p *Post, res http.ResponseWriter, req *http.Request) {
-	res.Header().Add("content-type", "text/html")
+	res.Header().Add("content-type", "text/html; charset=utf-8")
 	contents, err := p.render(s.templates["fullpost"])
 	if err != nil {
 		s.errorInRequest(res, req, err)
@@ -141,7 +141,7 @@ func (s *server) postPage(p *Post, res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
-	res.Header().Add("content-type", "text/html")
+	res.Header().Add("content-type", "text/html; charset=utf-8")
 
 	var posts string
 
