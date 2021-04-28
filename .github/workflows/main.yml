@@ -11,7 +11,7 @@ jobs:
       id: ts-setup
       with:
         authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-      uses: tailscale/tailscale-deploy-github
+      uses: tailscale/tailscale-deploy-github@1.6.0
 
     - name: Add SSH key
       id: ssh
