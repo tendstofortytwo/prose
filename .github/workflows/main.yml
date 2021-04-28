@@ -9,10 +9,10 @@ jobs:
     steps:
     - name: Setup Tailscale
       id: ts-setup
+      uses: tailscale/tailscale-deploy-github@main
       with:
         authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
-      uses: tailscale/tailscale-deploy-github@1.6.0
-
+		version: 1.7.359
     - name: Add SSH key
       id: ssh
       env:
