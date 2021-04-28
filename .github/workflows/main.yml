@@ -7,8 +7,13 @@ jobs:
     env:
       MACHINE: hydrogen
     steps:
+    - name: Setup Go 1.16
+      id: go
+      uses: actions/setup-go@v2
+      with:
+        go-version: '^1.16'
     - name: Setup Tailscale
-      id: ts-setup
+      id: tailscale
       uses: tailscale/tailscale-deploy-github@main
       with:
         authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
@@ -33,7 +38,7 @@ jobs:
       run: go build -o prose .
 
     - name: Build tarball and ship it
-      id: tarball-upload
+      id: tarball
       run: |
         TIME=$(date +%Y%m%d-%H%M%S)
         FILENAME=prose-${TIME}.tar.gz
