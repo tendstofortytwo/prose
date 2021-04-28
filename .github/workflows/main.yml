@@ -7,18 +7,11 @@ jobs:
     env:
       MACHINE: hydrogen
     steps:
-    - name: Setup Go 1.16
-      id: go
-      uses: actions/setup-go@v2
-      with:
-        go-version: '^1.16'
-
     - name: Setup Tailscale
       id: ts-setup
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        TAILSCALE_AUTHKEY: ${{ secrets.TAILSCALE_AUTHKEY }}
-      uses: tailscale/tailscale-deploy-github@v1
+      with:
+        authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+      uses: tailscale/tailscale-deploy-github
 
     - name: Add SSH key
       id: ssh
