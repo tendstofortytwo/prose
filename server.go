@@ -22,30 +22,26 @@ func newServer() (*server, error) {
 	s := &server{
 		staticHandler: http.FileServer(http.Dir("static/")),
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	posts, err := newPostList()
 	if err != nil {
 		return nil, err
 	}
-	s.mu.Lock()
 	s.postList = posts
-	s.mu.Unlock()
 
 	tpls, err := loadTemplates([]string{"page", "fullpost", "summary", "notfound", "error"})
 	if err != nil {
 		return nil, err
 	}
-	s.mu.Lock()
 	s.templates = tpls
-	s.mu.Unlock()
 
 	styles, err := newStylesMap()
 	if err != nil {
 		return nil, err
 	}
-	s.mu.Lock()
 	s.styles = styles
-	s.mu.Unlock()
 
 	postsLn := newPostListener(func(updateFn func(postList) postList) {
 		s.mu.Lock()
