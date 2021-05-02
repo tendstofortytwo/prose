@@ -93,8 +93,6 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	for _, p := range s.postList {
 		if p.Slug == slug {
 			s.postPage(p, res, req)
@@ -145,8 +143,6 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 
 	var posts string
 
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	for _, p := range s.postList {
 		summary, err := p.render(s.templates["summary"])
 		if err != nil {
@@ -165,8 +161,6 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, filename string) (ok bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	contents, ok := s.styles[filename]
 	if !ok {
 		return false
