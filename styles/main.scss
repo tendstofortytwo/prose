@@ -228,24 +228,16 @@ article {
 	}
 	
 	figure {
-		height: 20*$ls;
-		padding-bottom: 2*$ls;
 		margin: 2*$ls 0 0;
 		
 		img {
-			height: 100%;
 			width: 100%;
 			display: block;
-			object-fit: contain;
-		}
-		
-		img.fill {
-			object-fit: cover;
 		}
 		
 		figcaption {
-			height: 2*$ls;
-			line-height: 2*$ls;
+			margin: $ls 0;
+			line-height: $ls;
 			text-align: center;
 			font-style: italic;
 			color: var(--fadeColor);
