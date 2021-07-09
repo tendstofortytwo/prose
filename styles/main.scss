@@ -234,6 +234,16 @@ article {
 			width: 100%;
 			display: block;
 		}
+
+		img.vertical {
+			max-width: 20rem;
+			object-fit: contain;
+		}
+
+		.twitter-tweet, img.vertical {
+			margin-left: auto;
+			margin-right: auto;
+		}
 		
 		figcaption {
 			margin: $ls 0;
