@@ -117,9 +117,10 @@ func (s *server) errorInRequest(res http.ResponseWriter, req *http.Request, err 
 	log.Printf("ERR %s: %s", req.URL.Path, err)
 }
 
-func (s *server) createWebPage(title, contents string) (string, error) {
+func (s *server) createWebPage(title, subtitle, contents string) (string, error) {
 	ctx := map[string]interface{}{
 		"title":    title,
+		"subtitle": subtitle,
 		"contents": contents,
 	}
 	return s.templates["page"].Exec(ctx)
@@ -131,7 +132,7 @@ func (s *server) postPage(p *Post, res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
-	page, err := s.createWebPage(p.Metadata.Title, contents)
+	page, err := s.createWebPage(p.Metadata.Title, p.Metadata.Summary, contents)
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
@@ -151,7 +152,7 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 		posts = posts + summary
 	}
 
-	page, err := s.createWebPage("Home", posts)
+	page, err := s.createWebPage("Home", "Where I infodump in Markdown and nobody can stop me.", posts)
 
 	if err != nil {
 		s.errorInRequest(res, req, err)
