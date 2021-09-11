@@ -224,6 +224,7 @@ article {
 			font-size: 1em;
 			line-height: $ls;
 			display: block;
+			color: inherit;
 		}
 	}
 	
@@ -307,6 +308,10 @@ article {
 				}
 			}
 		}
+	}
+
+	li pre {
+		margin: $ls 0;
 	}
 	
 	a.load-content {
