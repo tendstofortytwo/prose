@@ -15,7 +15,7 @@ jobs:
         go-version: '^1.16'
     - name: Setup Tailscale
       id: tailscale
-      uses: tailscale/tailscale-deploy-github@main
+      uses: tailscale/tailscale-deploy-github@v1
       with:
         authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
     - name: Add SSH key
