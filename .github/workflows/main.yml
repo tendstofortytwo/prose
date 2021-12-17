@@ -43,7 +43,7 @@ jobs:
         TIME=$(date +%Y%m%d-%H%M%S)
         FILENAME=prose-${TIME}.tar.gz
         mkdir -p static/css
-        tar -czf $FILENAME prose static/ styles/ templates/ posts/
+        tar -czf $FILENAME prose fonts/ static/ styles/ templates/ posts/
         MACHINE_IP="$(tailscale ip -6 $MACHINE)"
         echo $FILENAME "github@[$MACHINE_IP]:/home/github/"
         scp -i ~/.ssh/key $FILENAME "github@[$MACHINE_IP]:/home/github/"
