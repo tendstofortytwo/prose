@@ -205,8 +205,8 @@ func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, file
 }
 
 func createImage(title, summary, url string, out io.Writer) error {
-	imgWidth, imgHeight, imgPaddingX, imgPaddingY := 1200, 630, 45, 90
-	accentHeight, spacerHeight := 7.5, 20.0
+	imgWidth, imgHeight, imgPaddingX, imgPaddingY := 1200, 600, 50, 100
+	accentHeight, spacerHeight := 12.5, 20.0
 	titleSize, summarySize, urlSize := 63.0, 42.0, 27.0
 	lineHeight := 1.05
 	textWidth := float64(imgWidth - 2*imgPaddingX)
