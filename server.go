@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"io"
 	"log"
-	"math"
 	"net/http"
 	"strings"
 	"sync"
@@ -206,15 +205,13 @@ func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, file
 }
 
 func createImage(title, summary, url string, out io.Writer) error {
-	imgWidth, imgPaddingX, imgPaddingY := 1200, 45, 90
-	accentHeight := 7.5
+	imgWidth, imgHeight, imgPaddingX, imgPaddingY := 1200, 630, 45, 90
+	accentHeight, spacerHeight := 7.5, 20.0
 	titleSize, summarySize, urlSize := 63.0, 42.0, 27.0
-	lineHeight := 1.5
+	lineHeight := 1.05
 	textWidth := float64(imgWidth - 2*imgPaddingX)
 
-	// temporarily set height = 0 for context only used to generate
-	// wrapped strings
-	draw := gg.NewContext(imgWidth, 0)
+	draw := gg.NewContext(imgWidth, imgHeight)
 
 	titleFont, err := gg.LoadFontFace("fonts/Nunito-Bold.ttf", titleSize)
 	if err != nil {
@@ -234,17 +231,6 @@ func createImage(title, summary, url string, out io.Writer) error {
 	draw.SetFontFace(summaryFont)
 	wrappedSummary := draw.WordWrap(summary, textWidth)
 
-	imgHeight := 2 * imgPaddingY
-	for range wrappedTitle {
-		imgHeight += int(math.Ceil(lineHeight * titleSize))
-	}
-	for range wrappedSummary {
-		imgHeight += int(math.Ceil(lineHeight * summarySize))
-	}
-	imgHeight += int(math.Ceil(lineHeight * urlSize))
-
-	// actual context with actual height
-	draw = gg.NewContext(imgWidth, imgHeight)
 	draw.SetHexColor("#fff")
 	draw.DrawRectangle(0, 0, float64(imgWidth), float64(imgHeight))
 	draw.Fill()
@@ -260,6 +246,7 @@ func createImage(title, summary, url string, out io.Writer) error {
 		draw.DrawString(line, float64(imgPaddingX), offset)
 		offset += lineHeight * titleSize
 	}
+	offset += spacerHeight
 
 	draw.SetFontFace(summaryFont)
 	draw.SetHexColor("#999")
