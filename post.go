@@ -31,6 +31,7 @@ type Post struct {
 	Slug     string
 	Metadata Metadata
 	Contents string
+	Image    bytes.Buffer
 }
 
 func newPost(slug string) (*Post, error) {
@@ -71,6 +72,12 @@ func newPost(slug string) (*Post, error) {
 		Slug:     slug,
 		Metadata: metadata,
 		Contents: converted.String(),
+	}
+
+	url := blogURL + "/" + slug
+	err = createImage(post.Metadata.Title, post.Metadata.Summary, url, &post.Image)
+	if err != nil {
+		return nil, fmt.Errorf("could not create post image: %v", err)
 	}
 
 	return post, nil
