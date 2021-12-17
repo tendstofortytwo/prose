@@ -26,7 +26,7 @@ type server struct {
 	templates map[string]*raymond.Template
 	postList
 	styles    map[string]string
-	homeImage bytes.Buffer
+	homeImage []byte
 }
 
 func newServer() (*server, error) {
@@ -34,7 +34,12 @@ func newServer() (*server, error) {
 		staticHandler: http.FileServer(http.Dir("static/")),
 	}
 
-	err := createImage(blogTitle, blogSummary, blogURL, &s.homeImage)
+	var imgBuffer bytes.Buffer
+	err := createImage(blogTitle, blogSummary, blogURL, &imgBuffer)
+	if err != nil {
+		return nil, err
+	}
+	s.homeImage, err = io.ReadAll(&imgBuffer)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +114,7 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 		return
 	}
 	if slug == "about.png" {
-		s.renderImage(res, req, &s.homeImage)
+		s.renderImage(res, req, s.homeImage)
 		return
 	}
 
@@ -118,7 +123,7 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 			s.postPage(p, res, req)
 			return
 		} else if slug == p.Slug+"/about.png" {
-			s.renderImage(res, req, &p.Image)
+			s.renderImage(res, req, p.Image)
 			return
 		}
 	}
@@ -140,11 +145,12 @@ func (s *server) errorInRequest(res http.ResponseWriter, req *http.Request, err 
 	log.Printf("ERR %s: %s", req.URL.Path, err)
 }
 
-func (s *server) createWebPage(title, subtitle, contents string) (string, error) {
+func (s *server) createWebPage(title, subtitle, contents, path string) (string, error) {
 	ctx := map[string]interface{}{
 		"title":    title,
 		"subtitle": subtitle,
 		"contents": contents,
+		"path":     blogURL + path,
 	}
 	return s.templates["page"].Exec(ctx)
 }
@@ -155,7 +161,7 @@ func (s *server) postPage(p *Post, res http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
-	page, err := s.createWebPage(p.Metadata.Title, p.Metadata.Summary, contents)
+	page, err := s.createWebPage(p.Metadata.Title, p.Metadata.Summary, contents, req.URL.Path)
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
@@ -175,7 +181,7 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 		posts = posts + summary
 	}
 
-	page, err := s.createWebPage("Home", blogSummary, posts)
+	page, err := s.createWebPage("Home", blogSummary, posts, "")
 
 	if err != nil {
 		s.errorInRequest(res, req, err)
@@ -184,12 +190,9 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 	res.Write([]byte(page))
 }
 
-func (s *server) renderImage(res http.ResponseWriter, req *http.Request, img io.Reader) {
+func (s *server) renderImage(res http.ResponseWriter, req *http.Request, img []byte) {
 	res.Header().Add("content-type", "image/png")
-	_, err := io.Copy(res, img)
-	if err != nil {
-		s.errorInRequest(res, req, err)
-	}
+	res.Write(img)
 }
 
 func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, filename string) (ok bool) {
@@ -203,8 +206,9 @@ func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, file
 }
 
 func createImage(title, summary, url string, out io.Writer) error {
-	imgWidth, imgPaddingX, imgPaddingY := 800, 30, 60
-	titleSize, summarySize, urlSize := 42.0, 28.0, 18.0
+	imgWidth, imgPaddingX, imgPaddingY := 1200, 45, 90
+	accentHeight := 7.5
+	titleSize, summarySize, urlSize := 63.0, 42.0, 27.0
 	lineHeight := 1.5
 	textWidth := float64(imgWidth - 2*imgPaddingX)
 
@@ -245,7 +249,6 @@ func createImage(title, summary, url string, out io.Writer) error {
 	draw.DrawRectangle(0, 0, float64(imgWidth), float64(imgHeight))
 	draw.Fill()
 	draw.SetHexColor("#3498db")
-	accentHeight := 5.0
 	draw.DrawRectangle(0, float64(imgHeight)-accentHeight, float64(imgWidth), accentHeight)
 	draw.Fill()
 

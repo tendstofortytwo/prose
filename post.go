@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"sort"
@@ -31,7 +32,7 @@ type Post struct {
 	Slug     string
 	Metadata Metadata
 	Contents string
-	Image    bytes.Buffer
+	Image    []byte
 }
 
 func newPost(slug string) (*Post, error) {
@@ -75,9 +76,14 @@ func newPost(slug string) (*Post, error) {
 	}
 
 	url := blogURL + "/" + slug
-	err = createImage(post.Metadata.Title, post.Metadata.Summary, url, &post.Image)
+	var buf bytes.Buffer
+	err = createImage(post.Metadata.Title, post.Metadata.Summary, url, &buf)
 	if err != nil {
 		return nil, fmt.Errorf("could not create post image: %v", err)
+	}
+	post.Image, err = io.ReadAll(&buf)
+	if err != nil {
+		return nil, err
 	}
 
 	return post, nil
