@@ -46,6 +46,7 @@ func newPost(slug string) (*Post, error) {
 			extension.Linkify,
 			extension.Strikethrough,
 			extension.Typographer,
+			extension.Footnote,
 			meta.Meta,
 			highlighting.Highlighting,
 		),
