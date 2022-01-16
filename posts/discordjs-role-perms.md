@@ -1,7 +1,7 @@
 ---
 title: Make your Discord.js bot's global slash commands accessible only to certain roles
 summary: Secrets that the documentation won't tell you (not sure why though).
-time: 1631387096
+time: 1642314274
 ---
 
 So I was recently making a very simple [Discord bot](https://github.com/namansood/counter-bot) as a joke. Since I like JavaScript, I found a JavaScript library to help me out with this, [discord.js](https://discord.js.org), and got started.
