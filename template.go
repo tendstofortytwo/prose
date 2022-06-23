@@ -4,16 +4,15 @@ import (
 	"fmt"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/aymerick/raymond"
 )
 
 func loadTemplate(file string) (*raymond.Template, error) {
-	tpl, err := raymond.ParseFile("templates/" + file + ".html")
+	tpl, err := raymond.ParseFile("templates/" + file)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse %s template: %w", file, err)
+		return nil, fmt.Errorf("could not parse %s template: %w", file, err)
 	}
 	tpl.RegisterHelper("datetime", func(timeStr string) string {
 		timestamp, err := strconv.ParseInt(timeStr, 10, 64)
@@ -23,12 +22,23 @@ func loadTemplate(file string) (*raymond.Template, error) {
 		}
 		return time.Unix(timestamp, 0).Format("Jan 2 2006, 3:04 PM")
 	})
+	tpl.RegisterHelper("rssDatetime", func(timeStr string) string {
+		timestamp, err := strconv.ParseInt(timeStr, 10, 64)
+		if err != nil {
+			log.Printf("Could not parse timestamp '%v', falling back to current time", timeStr)
+			timestamp = time.Now().Unix()
+		}
+		return rssDatetime(timestamp)
+	})
+	tpl.RegisterHelper("getFullUrl", func(slug string) string {
+		return blogURL + "/" + slug
+	})
 	log.Printf("Loaded template: %s", file)
 	return tpl, nil
 }
 
-// loadTemplates, for each f in files, loads `templates/$f.html`
-// as a handlebars HTML template. If any single template fails to
+// loadTemplates, for each f in files, loads `templates/$f`
+// as a handlebars HTML/XML template. If any single template fails to
 // load, only an error is returned. Conversely, if there is no error,
 // every template name passed is guaranteed to have loaded successfully.
 func loadTemplates(files []string) (map[string]*raymond.Template, error) {
@@ -48,22 +58,20 @@ func newTemplateListener(update func(func(map[string]*raymond.Template))) *liste
 	return &listener{
 		folder: "templates/",
 		update: func(file string) error {
-			tplName := strings.TrimSuffix(file, ".html")
-			newTpl, err := loadTemplate(tplName)
+			newTpl, err := loadTemplate(file)
 			if err != nil {
 				return err
 			}
 			update(func(oldMap map[string]*raymond.Template) {
-				oldMap[tplName] = newTpl
+				oldMap[file] = newTpl
 			})
 			return nil
 		},
 		clean: func(file string) error {
-			tplName := strings.TrimSuffix(file, ".html")
 			update(func(oldMap map[string]*raymond.Template) {
-				delete(oldMap, tplName)
+				delete(oldMap, file)
 			})
-			log.Printf("Unloaded template: %s", tplName)
+			log.Printf("Unloaded template: %s", file)
 			return nil
 		},
 	}

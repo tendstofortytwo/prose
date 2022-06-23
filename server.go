@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/aymerick/raymond"
 	"github.com/fogleman/gg"
@@ -51,7 +52,15 @@ func newServer() (*server, error) {
 	s.postList = posts
 	s.mu.Unlock()
 
-	tpls, err := loadTemplates([]string{"page", "fullpost", "summary", "notfound", "error"})
+	tpls, err := loadTemplates([]string{
+		"page.html",
+		"fullpost.html",
+		"summary.html",
+		"notfound.html",
+		"error.html",
+		"rss-channel.xml",
+		"rss-item.xml",
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -102,8 +111,8 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 	res = &errorCatcher{
 		res:          res,
 		req:          req,
-		errorTpl:     s.templates["error"],
-		notFoundTpl:  s.templates["notfound"],
+		errorTpl:     s.templates["error.html"],
+		notFoundTpl:  s.templates["notfound.html"],
 		handledError: false,
 	}
 	slug := req.URL.Path[1:]
@@ -114,6 +123,10 @@ func (s *server) router(res http.ResponseWriter, req *http.Request) {
 	}
 	if slug == "about.png" {
 		s.renderImage(res, req, s.homeImage)
+		return
+	}
+	if slug == "rss.xml" {
+		s.renderRSS(res, req)
 		return
 	}
 
@@ -151,12 +164,12 @@ func (s *server) createWebPage(title, subtitle, contents, path string) (string, 
 		"contents": contents,
 		"path":     blogURL + path,
 	}
-	return s.templates["page"].Exec(ctx)
+	return s.templates["page.html"].Exec(ctx)
 }
 
 func (s *server) postPage(p *Post, res http.ResponseWriter, req *http.Request) {
 	res.Header().Add("content-type", "text/html; charset=utf-8")
-	contents, err := p.render(s.templates["fullpost"])
+	contents, err := p.render(s.templates["fullpost.html"])
 	if err != nil {
 		s.errorInRequest(res, req, err)
 	}
@@ -173,7 +186,7 @@ func (s *server) homePage(res http.ResponseWriter, req *http.Request) {
 	var posts string
 
 	for _, p := range s.postList {
-		summary, err := p.render(s.templates["summary"])
+		summary, err := p.render(s.templates["summary.html"])
 		if err != nil {
 			log.Printf("could not render post summary for %s", p.Slug)
 		}
@@ -194,6 +207,41 @@ func (s *server) renderImage(res http.ResponseWriter, req *http.Request, img []b
 	res.Write(img)
 }
 
+func (s *server) renderRSS(res http.ResponseWriter, req *http.Request) {
+	res.Header().Add("content-type", "text/xml; charset=utf-8")
+
+	var posts string
+
+	for _, p := range s.postList {
+		summary, err := p.render(s.templates["rss-item.xml"])
+		if err != nil {
+			log.Printf("could not render post summary for %s", p.Slug)
+		}
+		posts = posts + summary
+	}
+
+	var pubDate string
+	if len(posts) > 0 {
+		pubDate = rssDatetime(s.postList[0].Metadata.Time)
+	} else {
+		pubDate = rssDatetime(0)
+	}
+
+	page, err := s.templates["rss-channel.xml"].Exec(map[string]string{
+		"title":       blogTitle,
+		"description": blogSummary,
+		"link":        blogURL,
+		"pubDate":     pubDate,
+		"items":       posts,
+	})
+
+	if err != nil {
+		s.errorInRequest(res, req, err)
+	}
+
+	res.Write([]byte(page))
+}
+
 func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, filename string) (ok bool) {
 	contents, ok := s.styles[filename]
 	if !ok {
@@ -202,6 +250,10 @@ func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, file
 	res.Header().Add("content-type", "text/css")
 	res.Write([]byte(contents))
 	return ok
+}
+
+func rssDatetime(timestamp int64) string {
+	return time.Unix(timestamp, 0).Format("Mon, 02 Jan 06 15:04:05 MST")
 }
 
 func createImage(title, summary, url string, out io.Writer) error {

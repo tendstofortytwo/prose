@@ -1,0 +1,7 @@
+<item>
+    <title>{{metadata.title}}</title>
+    <link>{{getFullUrl slug}}</link>
+    <description>{{metadata.summary}}</description>
+    <author>mail@nsood.in</author>
+    <pubDate>{{rssDatetime metadata.time}}</pubDate>
+</item>
