@@ -253,7 +253,7 @@ func (s *server) loadStylesheet(res http.ResponseWriter, req *http.Request, file
 }
 
 func rssDatetime(timestamp int64) string {
-	return time.Unix(timestamp, 0).Format("Mon, 02 Jan 06 15:04:05 MST")
+	return time.Unix(timestamp, 0).Format("Mon, 02 Jan 2006 15:04:05 MST")
 }
 
 func createImage(title, summary, url string, out io.Writer) error {

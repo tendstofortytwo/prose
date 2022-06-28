@@ -30,6 +30,26 @@ $accentColorDark: #3498db;
 	--accentColor: #{$accentColorLight};
 }
 
+@mixin link {
+	color: var(--strongColor);
+	text-decoration: none;
+	background-image: linear-gradient(
+		transparent 80%, 
+		var(--faintFadeColor) 80%,
+		var(--faintFadeColor) 87.5%,
+		transparent 87.5%
+	);
+
+	&:hover {
+		background-image: linear-gradient(
+			transparent 80%, 
+			var(--faintBodyColor) 80%,
+			var(--faintBodyColor) 87.5%,
+			transparent 87.5%
+		);
+	}
+}
+
 ::selection {
 	background-color: var(--accentColor);
 }
@@ -259,23 +279,7 @@ article {
 	
 	section.content {		
 		a {
-			color: var(--strongColor);
-			text-decoration: none;
-			background-image: linear-gradient(
-				transparent 80%, 
-				var(--faintFadeColor) 80%,
-				var(--faintFadeColor) 87.5%,
-				transparent 87.5%
-			);
-
-			&:hover {
-				background-image: linear-gradient(
-					transparent 80%, 
-					var(--faintBodyColor) 80%,
-					var(--faintBodyColor) 87.5%,
-					transparent 87.5%
-				);
-			}
+			@include link;
 		}
 		
 		ul, ol {
@@ -331,7 +335,14 @@ article {
 
 footer {
 	text-align: center;
-	padding: $ls 0;
+	padding: 0;
+	p {
+		margin: $ls 0;
+
+		a {
+			@include link;
+		}
+	}
 }
 
 @media (prefers-color-scheme: dark) {
