@@ -4,7 +4,7 @@ summary: Secrets that the documentation won't tell you (not sure why though).
 time: 1642314274
 ---
 
-**UPDATE (June 28, 2022):** Most of this article is now outdated. The Discord.js API has been updated and these steps _do not work_ any more, and they have provided a much nicer API (and one that's actually documented!) since. I don't think I'll write another article about how to fix this, but [here](https://github.com/tendstofortytwo/counter-bot/commit/5d39629082d59297418b5be23df5b90b1db16bf0) is a diff of me going from the contnts of this article to doing things "the right way".
+**UPDATE (June 28, 2022):** Most of this article is now outdated. The Discord.js API has been updated and these steps _do not work_ any more, and they have provided a much nicer API (and one that's actually documented!) since. I don't think I'll write another article about how to fix this, but [here](https://github.com/tendstofortytwo/counter-bot/commit/5d39629082d59297418b5be23df5b90b1db16bf0) is a diff of me going from the contents of this article to doing things "the right way".
 
 So I was recently making a very simple [Discord bot](https://github.com/namansood/counter-bot) as a joke. Since I like JavaScript, I found a JavaScript library to help me out with this, [discord.js](https://discord.js.org), and got started.
 
