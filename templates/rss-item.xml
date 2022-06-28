@@ -1,7 +1,7 @@
 <item>
     <title>{{metadata.title}}</title>
     <link>{{getFullUrl slug}}</link>
-    <guid>{{slug}}</guid>
+    <guid isPermaLink="false">{{slug}}</guid>
     <description>{{metadata.summary}}</description>
     <author>mail@nsood.in (Naman Sood)</author>
     <pubDate>{{rssDatetime metadata.time}}</pubDate>
