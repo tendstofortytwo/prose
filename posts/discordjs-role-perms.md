@@ -8,7 +8,7 @@ time: 1642314274
 
 So I was recently making a very simple [Discord bot](https://github.com/namansood/counter-bot) as a joke. Since I like JavaScript, I found a JavaScript library to help me out with this, [discord.js](https://discord.js.org), and got started.
 
-As part of this, the bot had a slash command that was supposed to be accessible only to people with a certain role in the server. Now I imagine this situation comes up often (eg. only allow moderators to ban pepole, etc), so I was surprised that the documentation on this was a bit lacking. The main website is basically a reference page, and there's a [guide website](https://discordjs.guide) linked in the header. Using the guide, I was able to create the command that I wanted, minus the role thing.
+As part of this, the bot had a slash command that was supposed to be accessible only to people with a certain role in the server. Now I imagine this situation comes up often (eg. only allow moderators to ban people, etc), so I was surprised that the documentation on this was a bit lacking. The main website is basically a reference page, and there's a [guide website](https://discordjs.guide) linked in the header. Using the guide, I was able to create the command that I wanted, minus the role thing.
 
 There *is* a page on [slash command permissions](https://discordjs.guide/interactions/slash-command-permissions.html), which looked like exactly what I wanted, and which told me to effectively do this[^1]:
 
