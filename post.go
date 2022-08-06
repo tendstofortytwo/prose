@@ -12,6 +12,7 @@ import (
 	"github.com/aymerick/raymond"
 	"github.com/mitchellh/mapstructure"
 	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
 	highlighting "github.com/yuin/goldmark-highlighting"
 	meta "github.com/yuin/goldmark-meta"
 	"github.com/yuin/goldmark/extension"
@@ -49,6 +50,7 @@ func newPost(slug string) (*Post, error) {
 			extension.Footnote,
 			meta.Meta,
 			highlighting.Highlighting,
+			emoji.New(emoji.WithRenderingMethod(emoji.Unicode)),
 		),
 		goldmark.WithRendererOptions(
 			html.WithUnsafe(),
