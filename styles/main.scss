@@ -28,24 +28,25 @@ $accentColorDark: #3498db;
 	--fadeColor: #{$fadeColorLight};
 	--faintFadeColor: #{lighten($fadeColorLight, 15%)};
 	--accentColor: #{$accentColorLight};
+	--faintAccentColor: #{saturate(lighten($accentColorLight, 35%), 20%)};
 }
 
 @mixin link {
 	color: var(--strongColor);
 	text-decoration: none;
 	background-image: linear-gradient(
-		transparent 80%, 
-		var(--faintFadeColor) 80%,
-		var(--faintFadeColor) 87.5%,
-		transparent 87.5%
+		transparent 72.5%, 
+		var(--faintAccentColor) 72.5%,
+		var(--faintAccentColor) 92.5%,
+		transparent 92.5%
 	);
 
 	&:hover {
 		background-image: linear-gradient(
-			transparent 80%, 
-			var(--faintBodyColor) 80%,
-			var(--faintBodyColor) 87.5%,
-			transparent 87.5%
+			transparent 0%, 
+			var(--faintAccentColor) 0%,
+			var(--faintAccentColor) 92.5%,
+			transparent 92.5%
 		);
 	}
 }
@@ -354,6 +355,7 @@ footer {
 		--fadeColor: #{$fadeColorDark};
 		--faintFadeColor: #{darken($fadeColorDark, 15%)};
 		--accentColor: #{$accentColorDark};
+		--faintAccentColor: #{desaturate(darken($accentColorLight, 15%), 20%)};
 	}
 
 	pre {
