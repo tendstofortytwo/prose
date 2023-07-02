@@ -25,6 +25,7 @@ jobs:
       env:
         SSH_KEY: ${{ secrets.SSH_KEY }}
       run: |
+        set -euxo pipefail
         mkdir -p ~/.ssh
         ssh-keyscan $MACHINE >> ~/.ssh/known_hosts
         printf "%s" "$SSH_KEY" > ~/.ssh/key
