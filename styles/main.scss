@@ -332,6 +332,14 @@ article {
 	hr {
 		margin: 2*$ls $ls $ls;
 	}
+
+	.mastodon-embed {
+		display: block;
+		margin: $ls auto;
+		width: 100%;
+		max-width: 30rem !important; // override style attribute they ship by default
+		border: 0;
+	}
 }
 
 footer {

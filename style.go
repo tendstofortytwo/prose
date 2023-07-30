@@ -7,13 +7,15 @@ import (
 	"os"
 	"strings"
 
-	"github.com/wellington/go-libsass"
+	"github.com/bep/godartsass/v2"
 )
+
+var sassTranspiler *godartsass.Transpiler
 
 func newStylesMap() (map[string]string, error) {
 	folder, err := os.ReadDir("styles/")
 	if err != nil {
-		return nil, fmt.Errorf("Could not load styles directory: %s", err)
+		return nil, fmt.Errorf("could not load styles directory: %s", err)
 	}
 
 	styles := make(map[string]string)
@@ -62,28 +64,36 @@ func loadStylesheet(filename string) (string, string, error) {
 func loadSCSS(filename string) (string, string, error) {
 	in, err := os.Open("styles/" + filename)
 	if err != nil {
-		return "", "", fmt.Errorf("Could not open style infile %s: %w", filename, err)
+		return "", "", fmt.Errorf("could not open stylesheet %s: %w", filename, err)
 	}
-	var buf strings.Builder
-	comp, err := libsass.New(&buf, in)
+	stylesheet, err := io.ReadAll(in)
 	if err != nil {
-		return "", "", fmt.Errorf("Could not start sass compiler for file %s: %w", filename, err)
+		return "", "", fmt.Errorf("could not read stylesheet %s: %w", filename, err)
 	}
-	if err = comp.Run(); err != nil {
-		return "", "", fmt.Errorf("Could not generate stylesheet %s: %w", filename, err)
+	if sassTranspiler == nil {
+		sassTranspiler, err = godartsass.Start(godartsass.Options{})
+		if err != nil {
+			return "", "", fmt.Errorf("could not start sass transpiler: %w", err)
+		}
 	}
-	return buf.String(), strings.TrimSuffix(filename, ".scss") + ".css", nil
+	res, err := sassTranspiler.Execute(godartsass.Args{
+		Source: string(stylesheet),
+	})
+	if err != nil {
+		return "", "", fmt.Errorf("could not generate stylesheet %s: %w", filename, err)
+	}
+	return res.CSS, strings.TrimSuffix(filename, ".scss") + ".css", nil
 }
 
 func loadCSS(filename string) (string, string, error) {
 	in, err := os.Open("styles/" + filename)
 	if err != nil {
-		return "", "", fmt.Errorf("Could not open style infile %s: %w", filename, err)
+		return "", "", fmt.Errorf("could not open style infile %s: %w", filename, err)
 	}
 	var buf strings.Builder
 	_, err = io.Copy(&buf, in)
 	if err != nil {
-		return "", "", fmt.Errorf("Could not copy stylesheet %s: %s", filename, err)
+		return "", "", fmt.Errorf("could not copy stylesheet %s: %s", filename, err)
 	}
 	return buf.String(), filename, nil
 }

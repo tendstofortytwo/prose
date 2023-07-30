@@ -2,6 +2,10 @@
 
 Prose is a blogging platform written in Go, which I am building to serve my own blog.
 
+## Setup
+
+As of July 2023, `libsass` is no longer available, so the environment running this binary must have access to `sass` or `dart-sass` on the PATH.
+
 ## Usage
 
 Blog posts should be created in the format `title-slug.md`. Work in progress posts should be stored as `WIP-title-slug.md`. Static content should be stored in the `static/` folder, appropriately arranged.
