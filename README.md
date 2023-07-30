@@ -4,7 +4,7 @@ Prose is a blogging platform written in Go, which I am building to serve my own 
 
 ## Setup
 
-As of July 2023, `libsass` is no longer available, so the environment running this binary must have access to `sass` or `dart-sass` on the PATH.
+As of July 2023, `libsass` is no longer available, so the environment running this binary must have access to `sass` on the PATH.
 
 ## Usage
 
