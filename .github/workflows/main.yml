@@ -27,8 +27,7 @@ jobs:
       run: |
         set -euxo pipefail
         mkdir -p ~/.ssh
-        tailscale ping $MACHINE
-        ssh-keyscan $MACHINE >> ~/.ssh/known_hosts
+        ssh-keyscan $MACHINE > ~/.ssh/known_hosts
         printf "%s" "$SSH_KEY" > ~/.ssh/key
         chmod 600 ~/.ssh/key
 
