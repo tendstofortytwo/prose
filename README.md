@@ -17,3 +17,7 @@ To start the server:
 	go run .
 
 Server will be live on port 8080.
+
+## License
+
+The code in this repository (everything other than the contents of `posts/` and `static/`) is licensed under the MIT license; see LICENSE.md. The blog posts themselves are licensed under [CC-BY-ND 4.0](https://creativecommons.org/licenses/by-nd/4.0/).
