@@ -14,9 +14,14 @@ Posts will be served as `/title-slug`, and files like `static/random/file/struct
 
 To start the server:
 
-	go run .
+	go run ./cmd/prose
 
 Server will be live on port 8080.
+
+The server can be deployed on a willing host using Docker:
+
+	docker build -t prose .
+	docker run -p 8080:8080 -it prose
 
 ## License
 

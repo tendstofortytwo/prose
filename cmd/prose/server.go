@@ -265,15 +265,15 @@ func createImage(title, summary, url string, out io.Writer) error {
 
 	draw := gg.NewContext(imgWidth, imgHeight)
 
-	titleFont, err := gg.LoadFontFace("fonts/Nunito-Bold.ttf", titleSize)
+	titleFont, err := gg.LoadFontFace("static/fonts/Nunito-Bold.ttf", titleSize)
 	if err != nil {
 		return err
 	}
-	summaryFont, err := gg.LoadFontFace("fonts/Nunito-LightItalic.ttf", summarySize)
+	summaryFont, err := gg.LoadFontFace("static/fonts/Nunito-LightItalic.ttf", summarySize)
 	if err != nil {
 		return err
 	}
-	urlFont, err := gg.LoadFontFace("fonts/JetBrainsMono-ExtraLight.ttf", urlSize)
+	urlFont, err := gg.LoadFontFace("static/fonts/JetBrainsMono-ExtraLight.ttf", urlSize)
 	if err != nil {
 		return err
 	}
