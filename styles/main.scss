@@ -333,12 +333,16 @@ article {
 		margin: 2*$ls $ls $ls;
 	}
 
-	.mastodon-embed {
+	.mastodon-embed, .youtube-embed {
 		display: block;
 		margin: $ls auto;
 		width: 100%;
 		max-width: 30rem !important; // override style attribute they ship by default
 		border: 0;
+	}
+
+	.youtube-embed {
+		aspect-ratio: 16 / 9;
 	}
 }
 
