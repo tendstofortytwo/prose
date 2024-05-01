@@ -11,8 +11,6 @@ jobs:
     - name: Setup Go 1.19
       id: go
       uses: actions/setup-go@v2
-      with:
-        go-version: '1.19.3'
     - name: Setup Tailscale
       id: tailscale
       uses: tailscale/github-action@v2
@@ -26,8 +24,9 @@ jobs:
         SSH_KEY: ${{ secrets.SSH_KEY }}
       run: |
         set -euxo pipefail
+        tailscale ping -c 2 $MACHINE
         mkdir -p ~/.ssh
-        ssh-keyscan $(tailscale ip -4 $MACHINE) > ~/.ssh/known_hosts
+        ssh-keyscan $MACHINE > ~/.ssh/known_hosts
         printf "%s" "$SSH_KEY" > ~/.ssh/key
         chmod 600 ~/.ssh/key
 
@@ -37,7 +36,7 @@ jobs:
 
     - name: Compile blog binary
       id: compile
-      run: go build -o prose .
+      run: go build -o prose ./cmd/prose
 
     - name: Build tarball and ship it
       id: tarball
@@ -45,8 +44,8 @@ jobs:
         TIME=$(date +%Y%m%d-%H%M%S)
         FILENAME=prose-${TIME}.tar.gz
         mkdir -p static/css
-        tar -czf $FILENAME prose fonts/ static/ styles/ templates/ posts/
-        echo $FILENAME "github@$(tailscale ip -4 $MACHINE):/home/github/"
-        scp -i ~/.ssh/key $FILENAME "github@$(tailscale ip -4 $MACHINE):/home/github/"
-        ssh -i ~/.ssh/key "github@$(tailscale ip -4 $MACHINE)" "tar -C /var/www/blog -xzf ~/$FILENAME"
-        ssh -i ~/.ssh/key "github@$(tailscale ip -4 $MACHINE)" "sudo systemctl restart prose"
+        tar -czf $FILENAME prose static/ styles/ templates/ posts/
+        echo $FILENAME "github@$MACHINE:/home/github/"
+        scp -i ~/.ssh/key $FILENAME "github@$MACHINE:/home/github/"
+        ssh -i ~/.ssh/key "github@$MACHINE" "tar -C /var/www/blog -xzf ~/$FILENAME"
+        ssh -i ~/.ssh/key "github@$MACHINE" "sudo systemctl restart prose"
