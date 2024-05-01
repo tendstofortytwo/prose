@@ -1,7 +1,7 @@
 ---
 title: How to install Linux from a Windows installer
 summary: I'm not sure why you would want to do this. Presumably for the same reason as me? I also don't know what that was.
-time: 9999999999999
+time: 1714532812
 ---
 
 A few days ago, I made this relatively-popular post on my Fediverse account, which had a picture of a Windows installer offering to install Alpine Linux:
