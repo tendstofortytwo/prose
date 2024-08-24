@@ -3,10 +3,10 @@ on: [push]
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    name: Deploy blog to hydrogen
+    name: Deploy blog to deuterium
     if: github.ref == 'refs/heads/main'
     env:
-      MACHINE: hydrogen
+      MACHINE: deuterium
     steps:
     - name: Setup Go 1.19
       id: go
@@ -45,7 +45,7 @@ jobs:
         FILENAME=prose-${TIME}.tar.gz
         mkdir -p static/css
         tar -czf $FILENAME prose static/ styles/ templates/ posts/
-        echo $FILENAME "github@$MACHINE:/home/github/"
-        scp -i ~/.ssh/key $FILENAME "github@$MACHINE:/home/github/"
-        ssh -i ~/.ssh/key "github@$MACHINE" "tar -C /var/www/blog -xzf ~/$FILENAME"
-        ssh -i ~/.ssh/key "github@$MACHINE" "sudo systemctl restart prose"
+        echo $FILENAME "www@$MACHINE:/home/www/"
+        scp -i ~/.ssh/key $FILENAME "www@$MACHINE:/home/www/"
+        ssh -i ~/.ssh/key "www@$MACHINE" "tar -C /var/www/prose.nsood.in -xzf ~/$FILENAME"
+        ssh -i ~/.ssh/key "www@$MACHINE" "sudo systemctl restart prose"
